@@ -1,1 +1,1286 @@
 #!/usr/bin/env bash
+
+if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then
+    DOCKER_TOOLS_CONFIG_DIR=$HOME/my_projects/docker-tools/.docker-tools
+fi
+
+# Application config variables
+source $DOCKER_TOOLS_CONFIG_DIR/config
+
+#
+# Supporting directories and files
+#
+
+#
+# @todo if these don't exist, run first-run routines...
+# @todo write first-run routines:
+#       - Check for each required file, if it doesn't exist download it... maybe
+#         __init should always do all that and should run before these are sourced
+#
+source "$DOCKER_TOOLS_LIB_DIR/libs.sh"
+source "$DOCKER_TOOLS_LIB_DIR/ui.sh"
+
+# `docker-tools` command variables
+__SELF__="docker-tools"
+__INSTALL_TMPFILE__="/tmp/${__SELF__}-install.tmp"
+__ERROR_TMPFILE__="/tmp/${__SELF__}-errors.tmp"
+
+##############################################################################
+##############################################################################
+##
+##  Documentation
+##
+##############################################################################
+##############################################################################
+
+#
+# @param usage function name
+# @param string description of what triggered it, if any
+#
+#
+function __show_usage {
+    local usage_fnc="__usage"
+    local usage_txt
+    local pager="$(__get_opt pager $@)"
+
+    if [ "" != "$1" ]; then usage_fnc="${usage_fnc}_${1}"; fi
+    if [ "" != "$2" ]; then
+        usage_txt="\n${2}\n$($usage_fnc)"
+    else
+        usage_txt="$($usage_fnc)"
+    fi
+
+    if [ "" != "$pager" ]; then
+        printf "$usage_txt" | $pager
+    else
+        printf "$usage_txt"
+    fi
+}
+
+function __show_help {
+    local usage_fnc="__help"
+    local usage_txt
+    local pager="$(__get_opt pager $@)"
+
+
+    if [ "" != "$1" ]; then usage_fnc="${usage_fnc}_${1}"; fi
+    if [ "" == "$pager" ]; then pager="less -r"; fi
+    if [ "" != "$2" ]; then
+        usage_txt="\n${2}\n$($usage_fnc)"
+    else
+        usage_txt="$($usage_fnc)"
+    fi
+
+    echo "$usage_txt" | $pager
+}
+
+#########################
+#
+#  docker-tools
+#
+#########################
+
+function __usage {
+        echo "
+usage: docker-tools [COMMAND]
+        "
+}
+
+function __help {
+    echo "
+    $(_s u)Name:$(_s r)
+
+        $(_s b)${__SELF__}$(_s r) -- shell script generator
+
+    $(_s u)Usage:$(_s r)
+
+        ${__SELF__} COMMAND [options]
+
+    $(_s u)Description:$(_s r)
+
+        Create and manage Docker container wrapper scripts (tools). Create,
+        save and manage 'recipes' (sets of values that define a \`docker run\`
+        command) and install or uninstall shell scripts based on them.
+        Generally useful for system utilities and dev tools (php-cli, node,
+        python-cli, etc.).
+
+    $(_s u)Commands:$(_s r)
+
+        See \`${__SELF__} [COMMAND] --help\` for command usage.
+
+        Things you can do with \`$(_s b)docker-tools$(_s r)\`
+
+            config      - Manage \`${__SELF__}\` configuration values
+            self-update - Update the \`docker-tools\` script
+
+        Things you can do with recipes
+
+            create      - Create or update a tool recipe
+            list        - Display installed and/or registered recipes
+            delete      -
+
+        Things you can do with tools
+
+            install     - Install a tool
+            uninstall   - Uninstall a tool
+            update      - Update an existing tool
+
+    $(_s u)Examples:$(_s r)
+
+        $ ${__SELF__} install gulp --tag=7.0-alpine"
+}
+
+#########################
+#
+#  install
+#
+#########################
+
+function __usage_install {
+        echo "
+ Usage: $(_s b)docker-tools install$(_s r) <recipe name> [options]...
+    Or: $(_s b)docker-tools install$(_s r) --image=IMAGE_NAME --name=TOOL_NAME [options]...
+
+    <recipe name>       Optional. If included, the specified recipe will be
+                        installed. Any recipe value can be overridden with
+                        an option
+
+    --cmd               Specify a prefix to any tool arguments
+    --entrypoint        Specify an entrypoint for the Docker container
+    --image             Required if a recipe isn't specified. Specify an image
+                        for the Docker container
+    --tag               Specify an image tag for the Docker container, default
+                        'latest'
+    --name              Required if a recipe isn't specified. Define the tool
+                        name. This will be the name of the installed script.
+    --prefix            Specify the install location
+    --volumes           Specify any volumes that should be mounted. This is a
+                        semicolon delimited list of \`docker run\` volume
+                        mount strings
+        "
+}
+
+function __help_install {
+    echo "
+    $(_s u)Name:$(_s r)
+
+        \`$(_s b)${__SELF__} install$(_s r)\` -- Install a tool
+
+    $(_s u)Usage:$(_s r)
+
+        ${__SELF__} install [RECIPE_NAME] [options]
+
+    $(_s u)Description:$(_s r)
+
+        Install a tool on the local system. A tool can be constructed from a
+        defined recipe or directly using command options. If a recipe name is
+        not provided then $(_s i)--image$(_s r) and $(_s i)--name$(_s r) options are required, otherwise
+        all options are... optional.
+
+    $(_s u)Options:$(_s r)
+
+        --cmd           See the \`COMMAND\` reference at https://docs.docker.com/engine/reference/run/#/cmd-default-command-or-options
+        --entrypoint    See the \`ENTRYPOINT\` reference at https://docs.docker.com/engine/reference/run/#/entrypoint-default-command-to-execute-at-runtime
+        --image         Docker image name, required if a recipe is not provided
+        --tag           Docker image tag
+        --name          Tool name, required if a recipe is not provided
+        --prefix        Tool install path
+        --volumes       Semicolon separated list of volume mount strings https://docs.docker.com/engine/reference/run/#volume-shared-filesystems
+
+    $(_s u)Examples:$(_s r)
+
+        Install a \`$(_s b)gulp$(_s r)\` command in '/usr/local/bin' from a stored recipe:
+            $ $(_s i)${__SELF__} install gulp$(_s r)
+
+        Install a \`$(_s b)phpunit$(_s r)\` command in '/usr/local/bin' from scratch:
+            $ $(_s i)${__SELF__} install \\
+              --name=phpunit \\
+              --image=mkenney/phpunit
+              --tag=php7 \\
+              --prefix=/usr/local/bin
+              --volumes=\$(pwd):/src:rw$(_s r)"
+}
+
+#########################
+#
+#  list
+#
+#########################
+
+function __usage_list {
+        echo "
+usage: docker-tools list ...
+        "
+}
+
+function __help_list {
+    echo "
+    $(_s u)Name:$(_s r)
+
+        \`$(_s b)${__SELF__} list$(_s r)\` -- list available recipes
+
+    $(_s u)Usage:$(_s r)
+
+        ${__SELF__} list
+
+    $(_s u)Description:$(_s r)
+
+        List available recipes.
+
+    $(_s u)Options:$(_s r)
+        --source
+
+    $(_s u)Examples:$(_s r)
+
+        $ ${__SELF__} list
+"
+}
+
+
+##############################################################################
+##############################################################################
+##
+##  Manage recipes
+##
+##  Recipes are structured, tab-delimited lists of values that define a tool
+##
+#
+# 0 - [recipe_name]
+# 1 - [tool_name]
+# 2 - [tool_prefix]
+# 3 - [docker_image]
+# 4 - [image_tag]
+# 5 - [entrypoint]
+# 6 - [cmd]
+# 7 - [volumes]
+#
+##
+##############################################################################
+##############################################################################
+
+#
+# Validate a recipe
+#
+# @param a tab-delimited recipe string
+# @return 0 or 1
+#
+function __recipe_validate {
+    if [ "" == "$1" ]; then
+        echo "A recipe is required"
+    fi
+
+    local ret_val=0
+    local -a recipe=($(echo "$1" | tr "|" "\n"))
+    local length=${#recipe[@]}
+
+    local name=${recipe[0]}
+    local status=${recipe[1]}
+    local metadata=${recipe[2]}
+    local script=${recipe[3]}
+    local image=${recipe[4]}
+    local tag=${recipe[5]}
+    local prefix=${recipe[6]}
+    local entrypoint=${recipe[7]}
+    local cmd=${recipe[8]}
+    local volumes=${recipe[9]}
+
+    if
+        [ "" != "$name" ] \
+        && [ "" != "$script" ] \
+        && [ "" != "$image" ] \
+    ; then
+        ret_val=1
+    fi
+
+    printf "$ret_val"
+}
+
+#
+# Delete a user recipe by name
+#
+# @param $recipe_name Required
+#
+function __recipe_delete {
+    if [ "" == "$1" ]; then
+        echo "A recipe name must be provided"
+        exit 1
+    fi
+
+    local recipe_name=$1
+    local recipe_deleted=0
+    local -a parts
+    local a=0
+
+    while read line; do
+        if [ "" != "${line:0:1}" ] && [ "#" != "${line:0:1}" ]; then
+            parts=($(echo "$line" | tr "|" "\n"))
+            if [ "$recipe_name" == "${parts[0]}" ]; then
+                line=
+                recipe_deleted=1
+            fi
+        fi
+        if [ "" != "$line" ]; then
+            ret_val[$a]=$line
+            a=$((a + 1))
+        fi
+    done < $DOCKER_TOOLS_RECIPES
+
+    if [ 0 -eq $recipe_deleted ]; then
+        echo "Recipe '$recipe_name' not found"
+        exit 2
+    fi
+}
+
+#
+# Get a saved recipe by name
+# If source is spcified, only the specified recipe source is searched,
+# otherwise the user recipes are searched first, followed by the registered
+# recipes.
+#
+# @param $recipe_name Required
+# @option --source=[recipes|registry] Optional
+# @return A stored recipe or ""
+#
+function __recipe_get {
+    if [ "" == "$1" ]; then
+        echo "A recipe name must be provided"
+        exit 1
+    fi
+
+    local recipe_name=$1
+    local recipe_sources="$(__get_opt source $@)"
+    local recipe_source
+    local ret_val
+    local ret_source
+
+    IFS=$'|'
+    local -a parts
+
+    case $recipe_sources in
+        recipes)
+            recipe_sources=$(printf "$DOCKER_TOOLS_RECIPES")
+            ;;
+        registry)
+            recipe_sources=$(printf "$DOCKER_TOOLS_REGISTRY")
+            ;;
+    esac
+    if [ "" == "$recipe_sources" ]; then recipe_sources=$(printf "$DOCKER_TOOLS_RECIPES|$DOCKER_TOOLS_REGISTRY"); fi
+
+    for recipe_source in $recipe_sources; do
+        while read line; do
+            if [ "" != "${line:0:1}" ] && [ "#" != "${line:0:1}" ]; then
+                parts=($line)
+                if [ "$recipe_name" == "${parts[0]}" ]; then
+                    ret_val=$line
+                    ret_source=$(basename $recipe_source)
+                    break
+                fi
+            fi
+        done < $recipe_source
+    done
+
+    if [ "" != "$ret_val" ]; then
+        printf "$ret_val|$ret_source"
+    fi
+}
+
+#
+# Save a recipe
+# Add a new or update an existing user recipe
+#
+# @param Required, recipe string
+#
+function __recipe_save {
+    if [ "" == "$1" ]; then
+        echo "A recipe must be provided"
+        exit 1
+    fi
+
+    local is_valid="$(__recipe_validate $1)"
+    if [ 1 -ne $is_valid ]; then
+        echo "Invalid recipe '$1'"
+        exit 2
+    fi
+
+    local -a ret_val
+    local recipe=$1
+    local -a recipe_parts=($(echo "$recipe" | tr "|" "\n"))
+    local recipe_saved=0
+    local -a parts
+
+
+    local a=0
+    while read line; do
+        if [ "" != "${line:0:1}" ] && [ "#" != "${line:0:1}" ]; then
+            parts=($(echo "$line" | tr "|" "\n"))
+            if [ "${recipe_parts[0]}" == "${parts[0]}" ]; then
+                line=$recipe
+                recipe_saved=1
+            fi
+            name="${parts[0]}"
+
+        fi
+        ret_val[$a]=$line
+        a=$((a + 1))
+    done < $DOCKER_TOOLS_RECIPES
+    if [ 0 -eq $recipe_saved ]; then
+        ret_val[$a]=$recipe
+        a=$((a + 1))
+    fi
+
+    # where's the save part... ?
+}
+
+#
+# Expects `install` command arguments
+#
+# @params `docker-tools install` command arguments
+#
+function __args_to_recipe {
+
+    # script argument
+    local script=$(__get_arg 1)
+    if [ "" == "$script" ] || [[ $script == *" "* ]]; then
+        echo "Invalid script name '$script'"
+        exit 1
+    fi
+
+    # all other options
+    local name="$(__get_opt name $@)"
+    local status="$(__get_opt status $@)"
+    local metadata="$(__get_opt metadata $@)"
+    local image="$(__get_opt image $@)"
+    local tag="$(__get_opt tag $@)"
+    local prefix="$(__get_opt prefix $@)"
+    local entrypoint="$(__get_opt entrypoint $@)"
+    local cmd="$(__get_opt cmd $@)"
+    local volumes="$(__get_opt volumes $@)"
+
+    local recipe="$name|$status|$metadata|$script|$image|$tag|$prefix|$entrypoint|$cmd|$volumes"
+    local is_valid="$(__recipe_validate $recipe)"
+    if [ 1 -ne $is_valid ]; then
+        echo "Invalid recipe '$recipe'"
+        exit 2
+    fi
+
+
+    # Recipe string
+    printf "$name|$status|$metadata|$script|$image|$tag|$prefix|$entrypoint|$cmd|$volumes"
+}
+
+
+#
+# Convert a recipe to a list of `docker-tools install` compatible arguments
+#
+# @param Required, recipe string
+# @return space-delmited list of `docker-tools install` arguments
+#
+function __recipe_to_args {
+
+    if [ "" == "$1" ]; then
+        echo "A recipe must be provided"
+        exit 1
+    fi
+    local -a recipe=($(echo "$1" | tr "|" "\n"))
+    local -a args
+
+    # Split on tabs
+    parts=($(echo "$line" | tr "|" "\n"))
+
+    local name=${parts[0]}
+    local status=${parts[1]}
+    local metadata=${parts[2]}
+    local script=${parts[3]}
+    local image=${parts[4]}
+    local tag=${parts[5]}
+    local prefix=${parts[6]}
+    local entrypoint=${parts[7]}
+    local cmd=${parts[8]}
+    local volumes=${parts[9]}
+
+    local options
+
+    if [ "" == "$script" ] || [[ $script == *" "* ]]; then
+        echo "Invalid script name '$script'"
+        exit 1
+    fi
+    if [ "" == "$image" ] || [[ $image == *" "* ]]; then
+        echo "Invalid image name '$image'"
+        exit 1
+    fi
+
+    if [ "" != "$name" ];       then options="$options --name=$name";             fi
+    if [ "" != "$status" ];     then options="$options --status=$status";         fi
+    if [ "" != "$metadata" ];   then options="$options --metadata=$metadata";     fi
+    if [ "" != "$image" ];      then options="$options --image=$image";           fi
+    if [ "" != "$tag" ];        then options="$options --tag=$tag";               fi
+    if [ "" != "$prefix" ];     then options="$options --prefix=$prefix";         fi
+    if [ "" != "$entrypoint" ]; then options="$options --entrypoint=$entrypoint"; fi
+    if [ "" != "$cmd" ];        then options="$options --cmd=$cmd";               fi
+    if [ "" != "$volumes" ];    then options="$options --volumes=$volumes";       fi
+
+    printf "$script $options"
+}
+
+#
+# Generate recipe documentation
+#
+# @param Required, recipe name
+# @option source Optional, a recipe source file in $DOCKER_TOOLS_CONFIG_DIR
+# @return Human-readable construct describing the recipe
+#
+function __recipe_describe {
+    IFS=$'|'
+
+    local ret_val
+
+    if [ "" == "$1" ]; then
+        echo "A recipe must be specified"
+        exit 1
+    fi
+
+    local recipe_name="$1"
+
+    #
+    # Load the recipe data
+    #
+    local -a recipe_parts=($(__recipe_get $@))
+    local tool_name=${recipe_parts[1]}
+    local tool_prefix=${recipe_parts[2]}
+    local docker_image=${recipe_parts[3]}
+    local image_tag=${recipe_parts[4]}
+    local entrypoint=${recipe_parts[5]}
+    local cmd=${recipe_parts[6]}
+    local volumes=${recipe_parts[7]}
+    local recipe_source=${recipe_parts[8]}
+    if [ "" == "$tool_prefix" ]; then tool_prefix=$DOCKER_TOOLS_PREFIX; fi
+    if [ "" == "$image_tag" ];   then image_tag="latest";               fi
+
+
+    # expand the tool path
+    local tool_path="$(eval "echo $tool_prefix/$tool_name")"
+
+    # installation status
+    local tool_installed=0
+    local tool_managed=0
+    local tool_updated=0
+
+    if [ -f "$tool_path" ]; then
+        tool_installed=1
+        if grep -q '__TOOLS_VERSION__=' "$tool_path" && grep -q "__RECIPE_NAME__=${recipe_name/\"/}" "$tool_path"; then
+            tool_managed=1
+            if grep -q "^__TOOLS_VERSION__=${DOCKER_TOOLS_VERSION/\"/}$" "$tool_path"; then
+                tool_updated=1
+            fi
+        fi
+    fi
+
+
+    local _color_reset_=$'\e[0m'
+    local _color_red_=$(tput setaf 88)
+    local _color_yellow_=$(tput setaf 190)
+    local _color_orange_=$(tput setaf 208)
+    local _color_green_=$(tput setaf 46)
+    local _color_blue_=$(tput setaf 21)
+
+
+    # Template vars
+    local color_installed=$(_s green bt)
+    local color_outdated=$(_s yellow bt)
+    local color_unmanaged=$(_s brown)
+    local color_not_installed=$(_s b)
+
+    local _status_installed_="$(_s green bt)installed$(_s r)"
+    local _status_outofdate_="$(_s yellow bt)outdated$(_s r)"
+    local _status_unmanaged_="$(_s brown)unmanaged$(_s r)"
+    local _status_not_installed_="$(_s b)not installed$(_s r)"
+
+    local _icon_installed_="→"
+    local _icon_outofdate_="→"
+    local _icon_unmanaged_="⤳"
+    local _icon_not_installed_="─"
+
+    local _recipe_name_="$(_s u)${recipe_name}$(_s r)"
+    local _tool_path_="$(_s cyan lt)${tool_path}$(_s r)"
+    local _image_=$docker_image:$image_tag
+    local _managed_status_="‣"
+    local _recipe_status_=$_status_not_installed_
+
+    local _recipe_status_icon_="‣"
+    if [ "registry" == "$recipe_source" ]; then
+        _recipe_status_icon_="*"
+    fi
+
+
+#✔ ☑ ☆ ★ ✧ ¤ * ｡ﾟ. ☆  ☺  ☻ ☸    ‣
+
+
+
+
+    if [ 1 -eq $tool_installed ]; then
+        _recipe_status_=$_status_unmanaged_
+        _recipe_status_icon_="$(_s red bt)${_recipe_status_icon_}$(_s r)"
+        _tool_path_="$(_s grey)${tool_path}$(_s r)"
+
+        if [ 1 -eq $tool_managed ]; then
+            _recipe_status_=$_status_installed_
+            _recipe_status_icon_="$(_s green bt)${_recipe_status_icon_}$(_s r)"
+            _tool_path_="$(_s white bt bold)${tool_path}$(_s r)"
+
+            if [ 1 -ne $tool_updated ]; then
+                _recipe_status_=$_status_outofdate_
+                _recipe_status_icon_="$(_s yellow bt)${_recipe_status_icon_}$(_s r)"
+                _tool_path_="$(_s i)${tool_path}$(_s r)"
+            fi
+        fi
+    fi
+
+
+    ret_val="
+
+${_recipe_status_icon_} ${_recipe_name_} -- ${_tool_path_}
+    ${_recipe_status_}
+
+    image      - ${_image_}"
+
+    ret_val="$ret_val\n"
+    if [ "" != "$entrypoint" ]; then
+        ret_val="$ret_val    entrypoint - $entrypoint\n"
+    fi
+    if [ "" != "$cmd" ]; then
+        ret_val="$ret_val    command    - $cmd\n"
+    fi
+    if [ "" != "$volumes" ]; then
+        ret_val="$ret_val    volumes    - ${volumes/;/\n                 - }\n"
+    fi
+
+#hash foo 2>/dev/null
+
+    printf "$ret_val"
+}
+
+
+##############################################################################
+##############################################################################
+##
+##  Manage the tool registry
+##
+##############################################################################
+##############################################################################
+
+#
+# Download an updated copy of the registry file
+#
+function __registry_update {
+    echo 'do stuff'
+}
+
+
+###############################################################################
+###############################################################################
+###
+###  No tools archive, to complicated
+###
+###############################################################################
+###############################################################################
+#
+##
+## Reap history for a specified tool from the archive
+##
+#function __docker_tools_archive_reap {
+#    local TOOL=$1
+#    if [ "" == "$TOOL" ]; then
+#        echo "A tool must be specified"
+#    fi
+#
+#    local -a archive
+#    local a=0
+#    local reap_count=0
+#    local -a parts
+#    while read line; do
+#        parts=($line)
+#        archived_tool=${parts[0]}
+#
+#        # Each line that starts with "$TOOL" but isn't only "$TOOL". If it's only
+#        # "$TOOL" it should be the current recipe.
+#        if [[ $archived_tool == "$TOOL"* ]] && [ "$archived_tool" != "$TOOL" ]; then
+#            echo "Reaping $line"
+#            reap_count=$((reap_count + 1))
+#        else
+#            archive[$a]=$line
+#            a=$((a + 1))
+#        fi
+#    done < $DOCKER_TOOLS_ARCHIVE
+#
+#    if [ 0 -eq $reap_count ]; then
+#        echo "No archives found"
+#        exit 1
+#    fi
+#
+#    printf "%s\n" "${archive[@]}" > $DOCKER_TOOLS_ARCHIVE
+#}
+#
+##
+## List active recipes
+##
+#function __docker_tools_archive_active {
+#    local -a installed
+#    local -a ret_val
+#    local -a parts
+#    local a=0
+#    while read line; do
+#        parts=($line)
+#        archived_tool=${parts[0]}
+#
+#        # If the tool name does not contain a ":" it should be the current tool
+#        if [[ $archived_tool != *":"* ]]; then
+#            ret_val[$a]=$line
+#            a=$((a + 1))
+#        fi
+#    done < $DOCKER_TOOLS_ARCHIVE
+#    if [ 0 -lt $a ]; then
+#        printf "%s\n" "${ret_val[@]}"
+#    fi
+#}
+#
+##
+## List archived recipes
+##
+## @param tool   Filter results by tool name. '__ALL__' equals no filter
+## @param status Filter results by the recipe status, either 'active' or 'archived'
+##
+#function __docker_tools_archive_list {
+#
+#    local tool_filter
+#    local status_filter
+#    local line
+#    local -a ret_val
+#    local -a parts
+#    local tool
+#    local a=0
+#
+#    if [ "" != $1 ];                  then tool_filter=$1;   fi
+#    if [ "__ALL__" == $tool_filter ]; then tool_filter=;     fi
+#    if [ "" != $2 ];                  then status_filter=$2; fi
+#
+#    while read line; do
+#        parts=($line)
+#        tool=${parts[0]}
+#
+#        # Filter by tool name
+#        if [ "" != "$tool_filter" ] && [[ $tool != "$tool_filter"* ]]; then
+#            line=
+#        fi
+#
+#        # Filter by archive status (active or archived recipes)
+#        if [ "" != "$status_filter" ]; then
+#            if [ "active" == "$status_filter" ] && [[ $tool == *":"* ]]; then
+#                line=
+#            elif [ "archived" == "$status_filter" ] && [[ $tool != *":"* ]]; then
+#                line=
+#            fi
+#        fi
+#
+#        # If $line is blank it has been filtered so ignore it
+#        if [ "" != "$line" ]; then
+#            ret_val[$a]=$line
+#            a=$((a + 1))
+#        fi
+#    done < $DOCKER_TOOLS_ARCHIVE
+#
+#    if [ 0 -lt $a ]; then
+#        printf "%s\n" "${ret_val[@]}"
+#    fi
+#}
+
+
+##############################################################################
+##############################################################################
+##
+##  Manage the `docker-tools` configuration
+##  The confguration schema is set and should only allow modifications to
+##  values already defined in the configuration file
+##
+##############################################################################
+##############################################################################
+
+#
+# Delete a config value
+# Deleting just means seting it to ""
+#
+# @param Required, the name of the value to delete
+#
+function __config_delete {
+    if [ "" == "$1" ]; then
+        echo "__config_delete: You must specify a config value to delete"
+        exit 1
+    fi
+
+    local -a ret_val
+    local a=0
+    local update_count=0
+
+    while read line; do
+        if [ "" != "${line:0:1}" ] \
+            && [ "#" != "${line:0:1}" ] \
+            && [ "$__DT_VERSION" != "${line%%=*}" ]
+        then
+            key=${line%%=*}
+            value=${line#*=}
+            if [ "$key" == "$1" ]; then
+                value=
+                update_count=$((update_count + 1))
+            fi
+            line="${key}=${value}"
+        fi
+        ret_val[$a]=$line
+        a=$((a + 1))
+    done < $DOCKER_TOOLS_CONFIG
+
+    printf "%s\n" "${ret_val[@]}" > $DOCKER_TOOLS_CONFIG
+    source $DOCKER_TOOLS_CONFIG
+}
+
+#
+# Get a config value
+#
+# @param Required, the name of the value to get
+#
+function __config_get {
+    if [ "" == "$1" ]; then
+        echo "__config_get: You must specify a config value to get"
+        exit 1
+    fi
+
+    local ret_val
+    local a=0
+    local set_count=0
+
+    while read line; do
+        if [ "" != "${line:0:1}" ] \
+            && [ "#" != "${line:0:1}" ] \
+            && [ "$__DT_VERSION" != "${line%%=*}" ]
+        then
+            key=${line%%=*}
+            value=${line#*=}
+            if [ "$key" == "$1" ]; then
+                ret_val=$value
+                break
+            fi
+            line="${key}=${value}"
+        fi
+    done < $DOCKER_TOOLS_CONFIG
+
+    if [ "" == "$ret_val" ]; then
+        echo "__config_get: Key not found '$1'"
+        exit 1
+    fi
+
+    echo $ret_val
+}
+
+#
+# Set a config value
+#
+# @param Required, the name of the value to set
+# @param Required, the value to set
+#
+function __config_set {
+    if [ "" == "$1" ]; then
+        echo "__config_set: You must specify a config value to set"
+        exit 1
+    fi
+    if [ "" == "$2" ]; then
+        echo "__config_set: You must specify a config value"
+        exit 2
+    fi
+
+    local -a ret_val
+    local a=0
+    local update_count=0
+
+    while read line; do
+        if [ "" != "${line:0:1}" ] \
+            && [ "#" != "${line:0:1}" ] \
+            && [ "$__DT_VERSION" != "${line%%=*}" ]
+        then
+            key=${line%%=*}
+            value=${line#*=}
+            if [ "$key" == "$1" ]; then
+                value=$2
+                update_count=$((update_count + 1))
+            fi
+            line="${key}=${value}"
+        fi
+        ret_val[$a]=$line
+        a=$((a + 1))
+    done < $DOCKER_TOOLS_CONFIG
+
+    if [ 0 -eq $update_count ]; then
+        echo "__config_set: Key not found '$1'"
+        exit 1
+    fi
+
+    printf "%s\n" "${ret_val[@]}" > $DOCKER_TOOLS_CONFIG
+
+    source $DOCKER_TOOLS_CONFIG
+}
+
+#
+# List current config values
+#
+# @return A newline delimited list of 'key=value' pairs
+#
+function __config_list {
+
+    local -a ret_val
+    local a=0
+
+    while read line; do
+        if [ "" != "${line:0:1}" ] \
+            && [ "#" != "${line:0:1}" ] \
+            && [ "$__DT_VERSION" != "${line%%=*}" ]
+        then
+            key=${line%%=*}
+            value=${line#*=}
+            ret_val[$a]="${key}=${value}"
+            a=$((a + 1))
+        fi
+    done < $DOCKER_TOOLS_CONFIG
+
+    printf "%s\n" "${ret_val[@]}"
+}
+
+
+##############################################################################
+##############################################################################
+##
+##  App commands
+##
+##############################################################################
+##############################################################################
+
+function __command_config {
+    echo '__command_config'
+}
+
+##############################################################################
+#
+#  list
+#
+##############################################################################
+
+#
+# @option --source
+#
+function __docker_tools_list {
+    local ret_val
+    local -a parts
+
+    local -a recipe_files=("$DOCKER_TOOLS_RECIPES" "$DOCKER_TOOLS_REGISTRY")
+    local recipe_file
+    local recipe_line
+    local recipe_name
+    local -a recipes
+    local recipe
+    local a=0
+
+    for recipe_file in "${recipe_files[@]}"; do
+        while read recipe_line; do
+            if [ "" != "${recipe_line:0:1}" ] && [ "#" != "${recipe_line:0:1}" ]; then
+                parts=($(echo "$recipe_line" | tr "|" "\n"))
+                recipe_name="${parts[0]}"
+                recipes[$a]="${recipe_name}:$(basename ${recipe_file})"
+                a=$((a + 1))
+            fi
+        done < $recipe_file
+    done
+
+    for recipe in $(echo "${recipes[@]}" | tr " " "\n" | sort | uniq); do
+        recipe_name=${recipe%%:*}
+        recipe_file=${recipe#*:}
+        ret_val="$ret_val $(__recipe_describe $recipe_name --source=$recipe_file)"
+    done
+
+    echo "$ret_val" | less -r
+}
+
+##############################################################################
+#
+#  install
+#
+##############################################################################
+
+#
+#
+#
+function __docker_tools_install {
+    local old_IFS=IFS
+
+    ########################
+    # 2 modes
+    #   if no recipe is specified, then at minimum --image and --name options
+    #   are required
+    #
+    #   if a recipe is specified, no options are required, but any may be
+    #   passed as a 1-time override of the corresponding recipe value
+    #########################
+
+    local recipe_name="$(__get_arg 1 $@)"
+    local opt_name="$(__get_opt name $@)"
+    local opt_prefix="$(__get_opt prefix $@)"
+    local opt_image="$(__get_opt image $@)"
+    local opt_tag="$(__get_opt tag $@)"
+    local opt_entrypoint="$(__get_opt entrypoint $@)"
+    local opt_cmd="$(__get_opt cmd $@)"
+    local opt_volumes="$(__get_opt volumes $@)"
+
+    if [ "" == "$recipe_name" ]; then
+        if [ "" == "$opt_image" ] || [ "" == "$opt_name" ]; then
+            __show_usage install " Error: A recipe name must be specified or --image AND --name options are
+ required"
+            exit 1
+        fi
+    fi
+ Error: A recipe name must be specified or --image AND --name options are
+ required
+    # Tool recipe
+    local -a recipe
+    IFS=$'|'
+    recipe=($(__recipe_get $recipe_name))
+    IFS=$old_IFS
+    if [ "" != "$opt_cmd" ];        then recipe[6]="$opt_cmd";        fi
+    if [ "" != "$opt_entrypoint" ]; then recipe[5]="$opt_entrypoint"; fi
+    if [ "" != "$opt_image" ];      then recipe[3]="$opt_image";      fi
+    if [ "" != "$opt_tag" ];        then recipe[4]="$opt_tag";        fi
+    if [ "" != "$opt_name" ];       then recipe[1]="$opt_name";       fi
+    if [ "" != "$opt_prefix" ];     then recipe[2]="$opt_prefix";     fi
+    if [ "" != "$opt_volumes" ];    then recipe[7]="$opt_volumes";    fi
+
+    if [ "" == "$opt_name" ]; then
+        echo "Error - a tool name was not provided"
+        exit 1
+    fi
+
+
+    # Tool tempfile
+    cp $DOCKER_TOOLS_LIB_DIR/templates/tool.sh $__INSTALL_TMPFILE__
+
+        # tool info
+    sed -i "s/declare __TOOLS_VERSION__=/declare __TOOLS_VERSION__=$DOCKER_TOOLS_VERSION/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_NAME__=/declare __RECIPE_NAME__=$recipe_name/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __TOOLS_LIB_DIR__=/declare __TOOLS_LIB_DIR__=$DOCKER_TOOLS_LIB_DIR/" $__INSTALL_TMPFILE__
+
+        # tool recipe
+    sed -i "s/declare __RECIPE_CMD__=/declare __RECIPE_CMD__=$opt_cmd/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_ENTRYPOINT__=/declare __RECIPE_ENTRYPOINT__=$opt_entrypoint/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_IMAGE__=/declare __RECIPE_IMAGE__=$opt_image/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_IMAGE_TAG__=/declare __RECIPE_IMAGE_TAG__=$opt_tag/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_TOOL__=/declare __RECIPE_TOOL__=$opt_name/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_PREFIX__=/declare __RECIPE_PREFIX__=$opt_prefix/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_VOLUMES__=/declare __RECIPE_VOLUMES__=$opt_volumes/" $__INSTALL_TMPFILE__
+
+    if [ "" == "$opt_prefix" ]; then opt_prefix=$DOCKER_TOOLS_PREFIX; fi
+    #result=$( (cat ${__INSTALL_TMPFILE__} > $opt_prefix/$opt_name) 2>${__ERROR_TMPFILE__})
+    #exit_code=$?
+    #errors=$(< ${__ERROR_TMPFILE__})
+
+
+echo "result:$result"
+echo "exit_code:$exit_code"
+echo "errors:$errors"
+#sed -i "s/php_value newrelic.appname emt_web-dev/php_value newrelic.appname $APP_NAME/" /var/www/html/documentroot/.htaccess
+
+
+
+
+
+
+
+echo "__docker_tools_install:recipe:${recipe[@]}"
+}
+
+
+
+##############################################################################
+#
+#        ###########  ##        ##  ##########
+#      #############  ###      ###  ############
+#     ###             ####    ####  ##        ###
+#     ##              ## ##  ## ##  ##         ##
+#     ##              ##  ####  ##  ##         ##
+#     ##              ##   ##   ##  ##         ##
+#     ##              ##        ##  ##         ##
+#     ###             ##        ##  ##        ###
+#      #############  ##        ##  ############
+#        ###########  ##        ##  ##########
+#
+##############################################################################
+
+#
+# Do any required initialization
+#
+# - Ensure the DOCKER_TOOLS_CONFIG_DIR directory exists and is correctly populated
+# - Ensure the DOCKER_TOOLS_LIB_DIR directory exists and is correctly populated
+#
+function __init {
+
+    # configuration directory
+    if [ ! -d "$DOCKER_TOOLS_CONFIG_DIR" ]; then
+        mkdir -pv "$DOCKER_TOOLS_CONFIG_DIR"
+        exit_code=$?
+        if [ 0 -ne $exit_code ]; then
+            echo "Could not create configuration directory '$DOCKER_TOOLS_CONFIG_DIR'"
+            exit 1
+        fi
+    fi
+
+    # lib directory
+    if [ ! -d "$DOCKER_TOOLS_LIB_DIR" ]; then
+        mkdir -pv "$DOCKER_TOOLS_LIB_DIR"
+        exit_code=$?
+        if [ 0 -ne $exit_code ]; then
+            echo "Could not create configuration directory '$DOCKER_TOOLS_LIB_DIR'"
+            exit 1
+        fi
+    fi
+
+#
+# Need to add populating the lib directory with the scripts from github here
+#
+
+    # configuration
+    if [ ! -f "$DOCKER_TOOLS_CONFIG" ]; then
+        touch "$DOCKER_TOOLS_CONFIG"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_CONFIG" ]; then
+        echo "Configuration file '$DOCKER_TOOLS_CONFIG' is not writable"
+        exit 1
+    fi
+
+    # recipes
+    if [ ! -f "$DOCKER_TOOLS_RECIPES" ]; then
+        touch "$DOCKER_TOOLS_RECIPES"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_RECIPES" ]; then
+        echo "Archive file '$DOCKER_TOOLS_RECIPES' is not writable"
+        exit 1
+    fi
+
+    # registry
+    if [ ! -f "$DOCKER_TOOLS_REGISTRY" ]; then
+        touch "$DOCKER_TOOLS_REGISTRY"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_REGISTRY" ]; then
+        echo "Registry manifest '$DOCKER_TOOLS_REGISTRY' is not writable"
+        exit 1
+    fi
+}
+
+
+
+function __main {
+    local exit_code
+
+    __init
+
+    COMMAND="$(__get_arg 1 $@)"
+
+    # Remove argument 1 from the parameters list
+    eval $(__shift_args $(__get_arg_pos 1 $@))
+
+    case $COMMAND in
+        config)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage config; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help config; exit 0
+            fi
+            __docker_tools_config $@
+            ;;
+
+        list)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage list; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help list; exit 0
+            fi
+            __docker_tools_list $@
+            ;;
+
+        install)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage install; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help install; exit 0
+            fi
+            __docker_tools_install $@
+            ;;
+
+        remove)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage remove; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help remove; exit 0
+            fi
+            __docker_tools_remove $@
+            ;;
+
+        self-update)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage selfupdate; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help selfupdate; exit 0
+            fi
+            __docker_tools_self_update $@
+            ;;
+
+        update)
+            # show usage
+            if [ 1 -eq $(__get_flag h $@) ]; then
+                __show_usage update; exit 0
+            fi
+            # show help
+            if [ "" != "$(__get_opt help $@)" ]; then
+                __show_help update; exit 0
+            fi
+            __docker_tools_update $@
+            ;;
+
+        "")
+            if [ 1 -eq $(__get_flag h $@) ]; then __show_usage; exit 0; fi
+            __show_help; exit 0
+            ;;
+
+        *)
+            echo "Unknown command: '$INSTALL_ARG'"
+            __usage
+            exit 1
+    esac
+}
+
+#IFS=$'\n'
+#echo
+##for i in $(seq 1 256); do
+#for i in $(seq 0 255); do
+#    printf "$(tput setaf $i)$i: The quick brown fox jumped over the lazy dog.\n";
+#done
+#exit
+
+__main $@
+exit $?

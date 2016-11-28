@@ -1,0 +1,302 @@
+
+##############################################################################
+##############################################################################
+##
+##  Lib
+##
+##############################################################################
+##############################################################################
+
+#
+# Get the position of the argument number in the argument list
+# Useful for shifting arguments around
+#
+# @param filter
+# @param $@
+# @return Number or ""
+#
+function __get_arg_pos
+
+#
+# Create a `set` command to splice positional arguments out of the set.
+# Accepts any number of arguments
+#
+# i.e.
+#   Remove argumets 3 and 6 from the parameter list:
+#       `eval $(__get_args_splice_command 3 6)`
+#
+function __get_args_splice_command
+
+#
+# Get command-line arguments
+#
+# @param $@
+# @return a space-delimited list of each option in the order it was given.
+#         Duplicates are included.
+#
+function __get_args
+
+#
+# Get a command-line argument by index
+#
+# @param argument number
+# @param $@
+# @return a space-delimited list of each option in the order it was given.
+#         Duplicates are included.
+#
+function __get_arg
+
+#
+# Get the index of a specified command-line argument
+#
+# @param argument
+# @param $@
+# @return A number or "" if the argument doesn't exist
+#
+function __get_argnum
+
+#
+# Get command-line options
+# An option is any argument that begins with '--'
+#
+# @param $@
+# @return a unique, sorted, space-delimited list of each option
+#
+function __get_opts
+
+#
+# Get the value of a specified command-line option
+# An option is any argument that begins with '--'
+# A value is anything associated to the argument with '='
+#
+# @param string The name of the option to retrieve the value for
+# @param $@
+# @return The specified value or "" if it doesn't exist
+#
+function __get_opt
+
+#
+# Get command-line flags
+# Flags are made up of argument that begins with '-'
+#
+# @param $@
+# @return a unique, sorted, space-delimited list of each flag
+#
+function __get_flags
+
+#
+# See if a flag was passed
+#
+# @param flag to search for
+# @param $@
+# @return 1 for true, 0 for false
+#
+function __has_flag
+
+#
+# Get the tool install prefix based on a combination of command arguments and
+# the user $PATH.
+#
+# @param $@
+# @return The logical installation path
+#
+function __get_install_prefix
+
+##############################################################################
+##############################################################################
+##
+##  Manage recipes
+##
+##  Recipes are structured, tab-delimited lists of values that define a tool
+##
+#
+# 0 - [recipe_name]
+# 1 - [tool_name]
+# 2 - [tool_prefix]
+# 3 - [docker_image]
+# 4 - [image_tag]
+# 5 - [entrypoint]
+# 6 - [cmd]
+# 7 - [volumes]
+#
+##
+##############################################################################
+##############################################################################
+
+#
+# Validate a recipe
+#
+# @param a tab-delimited recipe string
+# @return 0 or 1
+#
+function __recipe_validate
+
+#
+# Delete a user recipe by name
+#
+# @param $recipe_name Required
+#
+function __recipe_delete
+
+#
+# Get a saved recipe by name
+# If source is spcified, only the specified recipy source is searched,
+# otherwise the user recipies are searched first, followed by the registered
+# recipies.
+#
+# @param $recipe_name Required
+# @option --source=[recipes|registry] Optional
+# @return A stored recipe or ""
+#
+function __recipe_get
+
+#
+# Save a recipe
+# Add a new or update an existing user recipe
+#
+# @param Required, recipe string
+#
+function __recipe_save
+
+#
+# Expects `install` command arguments
+#
+# @params `docker-tools install` command arguments
+#
+function __args_to_recipe
+
+#
+# Convert a recipe to a list of `docker-tools install` compatible arguments
+#
+# @param Required, recipe string
+# @return space-delmited list of `docker-tools install` arguments
+#
+function __recipe_to_args
+
+#
+# Generate recipe documentation
+#
+# @param Required, recipe string
+# @return Human-readable construct describing the recipe
+#
+function __recipe_describe
+
+##############################################################################
+##############################################################################
+##
+##  Manage the tool registry
+##
+##############################################################################
+##############################################################################
+
+#
+# Download an updated copy of the registry file
+#
+function __registry_update
+
+##############################################################################
+##############################################################################
+##
+##  Manage the `docker-tools` configuration
+##  The confguration schema is set and should only allow modifications to
+##  values already defined in the configuration file
+##
+##############################################################################
+##############################################################################
+
+#
+# Delete a config value
+# Deleting just means seting it to ""
+#
+# @param Required, the name of the value to delete
+#
+function __config_delete
+
+#
+# Get a config value
+#
+# @param Required, the name of the value to get
+#
+function __config_get
+
+#
+# Set a config value
+#
+# @param Required, the name of the value to set
+# @param Required, the value to set
+#
+function __config_set
+
+#
+# List current config values
+#
+# @return A newline delimited list of 'key=value' pairs
+#
+function __config_list
+
+
+##############################################################################
+##############################################################################
+##
+##  Command functions and helpers
+##
+##############################################################################
+##############################################################################
+
+
+
+
+
+
+##############################################################################
+#
+#        ###########  ##        ##  ##########
+#      #############  ###      ###  ############
+#     ###             ####    ####  ##        ###
+#     ##              ## ##  ## ##  ##         ##
+#     ##              ##  ####  ##  ##         ##
+#     ##              ##   ##   ##  ##         ##
+#     ##              ##        ##  ##         ##
+#     ###             ##        ##  ##        ###
+#      #############  ##        ##  ############
+#        ###########  ##        ##  ##########
+#
+##############################################################################
+
+
+#
+# Do any required initialization
+#
+# - Ensure the DOCKER_TOOLS_CONFIG_DIR directory exists and is correctly populated
+# - Ensure the DOCKER_TOOLS_LIB_DIR directory exists and is correctly populated
+#
+function __init
+
+
+
+
+#
+# All the stuff..
+#
+function __main
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

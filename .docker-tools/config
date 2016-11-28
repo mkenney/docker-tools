@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+export __DT_VERSION=master
+
+##################
+# Remote resources
+##################
+export __DT_INSTALLER_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/install.sh
+export __DT_CONFIG_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/.docker-tools/registry
+export __DT_REGISTRY_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/.docker-tools/registry
+export __DT_LIB_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/lib
+
+
+if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then
+    DOCKER_TOOLS_CONFIG_DIR=$HOME/my_projects/docker-tools/.docker-tools
+fi
+export DOCKER_TOOLS_CONFIG_DIR
+
+
+source "$DOCKER_TOOLS_CONFIG_DIR/lib/globals.sh"

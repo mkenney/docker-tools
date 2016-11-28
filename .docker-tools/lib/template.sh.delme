@@ -1,0 +1,23 @@
+
+
+source "${__TOOLS_LIB_DIR__}/globals.sh"
+source "${__TOOLS_LIB_DIR__}/libs.sh"
+
+##############################################################################
+#
+# Load and execute a script template
+#
+#
+##############################################################################
+
+#
+declare __TEMPLATE_DIR__="${__TOOLS_LIB_DIR__}/templates/${__TEMPLATE___}"
+
+# Resources
+if [ -f "${__TEMPLATE___}/libs.sh" ]; then source "${__TEMPLATE___}/libs.sh"; fi
+if [ -f "${__TEMPLATE___}/data.sh" ]; then source "${__TEMPLATE___}/data.sh"; fi
+
+# Load and execute the tool
+if [ -f "${__TEMPLATE___}/template.sh" ]; then source "${__TEMPLATE___}/template.sh"; fi
+
+exit $?

@@ -1,0 +1,1100 @@
+#!/usr/bin/env bash
+
+##############################################################################
+##############################################################################
+##
+##  Globals and defaults
+##
+##############################################################################
+##############################################################################
+
+__SCRIPT_SHEBANG=shebang.sh
+__SCRIPT_VARS=vars.sh
+__SCRIPT_BODY=body.sh
+
+SELF=$0
+DEFAULT_PATH=/usr/local/bin
+
+#
+# Remote resources
+#
+DOCKER_TOOLS_INSTALLER_URL=https://raw.githubusercontent.com/mkenney/docker-tools/master/install.sh
+#DOCKER_TOOLS_INSTALLER_URL=https://raw.githubusercontent.com/mkenney/docker-tools/stable/install.sh
+DOCKER_TOOLS_MANIFEST_URL=https://raw.githubusercontent.com/mkenney/docker-tools/master/registry/manifest
+#DOCKER_TOOLS_MANIFEST_URL=https://raw.githubusercontent.com/mkenney/docker-tools/stable/registry/manifest
+DOCKER_TOOLS_LIB_URL=https://raw.githubusercontent.com/mkenney/docker-tools/master/lib
+#DOCKER_TOOLS_LIB_URL=https://raw.githubusercontent.com/mkenney/docker-tools/stable/lib
+
+#
+# Configuration directories and files
+#
+DOCKER_TOOLS_CONFIG_DIR=$HOME/.docker-tools
+
+DOCKER_TOOLS_ARCHIVE=$DOCKER_TOOLS_CONFIG_DIR/archive
+DOCKER_TOOLS_CONFIG=$DOCKER_TOOLS_CONFIG_DIR/config
+DOCKER_TOOLS_REGISTRY=$DOCKER_TOOLS_CONFIG_DIR/manifest
+
+#
+# Supporting directories and files
+#
+DOCKER_TOOLS_LIB_DIR=$DOCKER_TOOLS_CONFIG_DIR/lib
+
+COMMAND=
+SCRIPT=
+DOCKER_IMAGE=
+DOCKER_TAG=
+
+
+##############################################################################
+##############################################################################
+##
+##  Lib
+##
+##############################################################################
+##############################################################################
+
+function __get_args {
+    ret_val=
+    for var in "$@"; do
+        if [ "-" != "${var:0:1}" ]; then
+            if [ "" == "$ret_val" ]; then
+                ret_val="$var"
+            else
+                ret_val="$ret_val $var"
+            fi
+        fi
+    done
+    echo $ret_val | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
+function __get_opts {
+    declare ret_val=
+    for var in "$@"; do
+        if [ "--" == "${var:0:2}" ]; then
+            if [ "" == "$ret_val" ]; then
+                ret_val="${var:2}"
+            else
+                ret_val="$ret_val ${var:2}"
+            fi
+        fi
+    done
+    echo $(echo $ret_val | tr " " "\n" | sort | uniq | tr "\n" " " | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+}
+
+function __get_flags {
+    declare ret_val=
+    for var in "$@"; do
+        if [ "-" == "${var:0:1}" ] && [ "-" != "${var:1:1}" ]  && [ "" != "${var:1}" ]; then
+            if [ "" == "$ret_val" ]; then
+                ret_val="${var:1}"
+            else
+                ret_val="$ret_val ${var:1}"
+            fi
+        fi
+    done
+    echo $ret_val | tr " " "\n" | sort | uniq | tr "\n" " " | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
+#################################
+#
+#  Do any required initialization
+#
+#################################
+function __docker_tools_init {
+    # configuration directory
+    if [ ! -d "$DOCKER_TOOLS_CONFIG_DIR" ]; then
+        mkdir -pv "$HOME/.docker-tools"
+        exit_code=$?
+        if [ 0 -ne $exit_code ]; then
+            echo "Could not create configuration directory '$DOCKER_TOOLS_CONFIG_DIR'"
+            exit 1
+        fi
+    fi
+    # lib directory
+    if [ ! -d "$DOCKER_TOOLS_LIB_DIR" ]; then
+        mkdir -pv "$DOCKER_TOOLS_LIB_DIR"
+        exit_code=$?
+        if [ 0 -ne $exit_code ]; then
+            echo "Could not create configuration directory '$DOCKER_TOOLS_LIB_DIR'"
+            exit 1
+        fi
+    fi
+    # configuration
+    if [ ! -f "$DOCKER_TOOLS_CONFIG" ]; then
+        touch "$DOCKER_TOOLS_CONFIG"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_CONFIG" ]; then
+        echo "Configuration file '$DOCKER_TOOLS_CONFIG' is not writable"
+        exit 1
+    fi
+    # archive
+    if [ ! -f "$DOCKER_TOOLS_ARCHIVE" ]; then
+        touch "$DOCKER_TOOLS_ARCHIVE"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_ARCHIVE" ]; then
+        echo "Archive file '$DOCKER_TOOLS_ARCHIVE' is not writable"
+        exit 1
+    fi
+    # registry manifest
+    if [ ! -f "$DOCKER_TOOLS_REGISTRY" ]; then
+        touch "$DOCKER_TOOLS_REGISTRY"
+    fi
+    if [ ! -w "$DOCKER_TOOLS_REGISTRY" ]; then
+        echo "Registry manifest '$DOCKER_TOOLS_REGISTRY' is not writable"
+        exit 1
+    fi
+}
+
+#
+# Get the tool installation prefix
+#
+function __docker_tools_get_install_prefix {
+    local PREFIX=/usr/local
+    local opt_prefix=
+    local prefix_path=
+    local tmp=
+
+    for opt in "$(__get_opts $@)"; do
+        option=${opt%%=*}
+        value=${opt#*=}
+
+        # Sanitize any prefix input
+        case $option in
+            prefix)
+                opt_prefix=$opt
+                dir=$(dirname $value)
+                value=$(basename $value)
+                if [ "/" == "$value" ]; then value= ; fi
+
+                if [ "" == "$dir" ]; then
+                    dir='./'
+                elif [ "/" != "$dir" ]; then
+                    dir="$dir/"
+                fi
+                prefix_path="${dir}${value}"
+                ;;
+
+            *)
+                if [ "" != "$opt" ]; then
+                    echo "Option provided but not defined: --$option"
+                    __usage
+                    exit 1
+                fi
+        esac
+    done
+
+    #
+    # No install prefix specified, search the user's path for an existing install
+    #
+    if [ "" == "$opt_prefix" ]; then
+        if [ "" != "$SCRIPT" ]; then
+            tmp=$(which $SCRIPT)
+            if [ 0 -eq $? ] && [ "" != "$tmp" ]; then
+                prefix_path=$(dirname $tmp)
+            fi
+        else
+            prefix_path=$DEFAULT_PATH
+        fi
+    fi
+
+    echo "$prefix_path"
+}
+
+#
+# List active recipies
+#
+function __docker_tools_list_installed {
+    declare -a installed
+    declare -a ret_val
+    local a=0
+    while read line; do
+        parts=($line)
+        archived_tool=${parts[0]}
+
+        # If the tool name does not contain a ":" it should be the current tool
+        if [[ $archived_tool != *":"* ]]; then
+            ret_val[$a]=$line
+            a=$((a + 1))
+        fi
+    done < $DOCKER_TOOLS_ARCHIVE
+    if [ 0 -lt $a ]; then
+        printf "%s\n" "${ret_val[@]}"
+    fi
+}
+
+#
+# List archived recipies
+#
+# Optionally filter by a tool name
+#
+function __docker_tools_list_archived {
+    local filter=$1
+    declare -a ret_val
+    local a=0
+    while read line; do
+        parts=($line)
+        archived_tool=${parts[0]}
+        if [ "" == "$filter" ] || [[ $archived_tool == "$filter"* ]]; then
+            ret_val[$a]=$line
+            a=$((a + 1))
+        fi
+    done < $DOCKER_TOOLS_ARCHIVE
+    if [ 0 -lt $a ]; then
+        printf "%s\n" "${ret_val[@]}"
+    fi
+}
+
+#
+# List registered recipies
+#
+# Optionally filter by a tool name
+#
+function __docker_tools_list_registered {
+    local filter=$1
+    declare -a ret_val
+    local a=0
+    while read line; do
+        parts=($line)
+        archived_tool=${parts[0]}
+        if [ "" != "$filter" ]; then
+            for part in $parts; do
+                if [[ $part == *"$filter"* ]]; then
+                    ret_val[$a]=$line
+                    a=$((a + 1))
+                fi
+            done
+        else
+            ret_val[$a]=$line
+            a=$((a + 1))
+        fi
+    done < $DOCKER_TOOLS_REGISTRY
+
+    if [ 0 -lt $a ]; then
+        printf "%s\n" "${ret_val[@]}"
+    fi
+}
+
+#
+# docker-tools logic
+#
+function __parse_args {
+}
+
+
+
+##############################################################################
+##############################################################################
+##
+##  Manage the docker tools archive
+##
+##############################################################################
+##############################################################################
+
+#
+# Reap history for a specified tool from the archive
+#
+function __docker_tools_archive_reap {
+    local TOOL=$1
+    if [ "" == "$TOOL" ]; then
+        echo "A tool must be specified"
+    fi
+
+    declare -a archive
+    local a=0
+    local reap_count=0
+    while read line; do
+        parts=($line)
+        archived_tool=${parts[0]}
+
+        # Each line that starts with "$TOOL" but isn't only "$TOOL". If it's only
+        # "$TOOL" it should be the current recipe.
+        if [[ $archived_tool == "$TOOL"* ]] && [ "$archived_tool" != "$TOOL" ]; then
+            echo "Reaping $line"
+            reap_count=$((reap_count + 1))
+        else
+            archive[$a]=$line
+        fi
+        a=$((a + 1))
+    done < $DOCKER_TOOLS_ARCHIVE
+
+    if [ 0 -eq $reap_count ]; then
+        echo "No archives found"
+        exit 1
+    fi
+
+    printf "%s\n" "${archive[@]}" > $DOCKER_TOOLS_ARCHIVE
+}
+
+function __docker_tools_clean {
+
+    # Get tools to archive from the arguments, default to all tools if none are
+    # specified
+    local tools="$(__get_args $@)"
+    if [ "" == "$tools" ]; then
+        tools="$(__docker_tools_list_installed archive)"
+    fi
+
+    # Remove each tool's recipe history from the archive
+    for tool in $tools; do
+        __docker_tools_archive_reap $tool
+        exit $?
+    done
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+
+#
+# All runtime documentation
+#
+function __usage {
+    SELF=$0
+    if [ "sh" == "$SELF" ] || [ "bash" == "$SELF" ]; then
+        SELF="bash -s"
+    fi
+
+    local COMMAND=$1
+
+    #
+    # Default
+    #
+    if [ "" == "$COMMAND" ]; then
+        echo "
+    Usage
+        $SELF COMMAND [options]
+
+    Synopsys
+        Install a Docker container wrapper script locally
+
+    Commands
+        config      - Manage configuration values
+        list        - Display registered and/or installed recipes
+        install     - Create and install a tool
+        remove      - Uninstall a tool
+        self-update - Update the \`docker-tools\` script
+        update      - Update an existing tool
+
+    Options
+        See \`$SELF [COMMAND] --help\` for command usage
+
+    Examples
+        $ $SELF install gulp --tag=7.0-alpine --prefix=\$HOME/bin
+"
+
+    #
+    # Clean
+    #
+    elif [ "clean" == "$COMMAND" ]; then
+        echo "
+    Usage
+        $SELF $COMMAND [TOOL [TOOL [TOOL]]] [options]
+
+    Synopsys
+        Remove archived tool versions
+
+    Options
+        --prefix Specify the local instllation path for the script, default
+                 '$HOME/bin'
+
+    Examples
+        $ curl -L $INSTALLER_URL | bash -s $COMMAND --command=gulp --tag=7.0-alpine --prefix=\$HOME/bin
+        $ $SELF $COMMAND gulp --tag=7.0-alpine --prefix=\$HOME/bin"
+
+    #
+    # Install
+    #
+    elif [ "install" == "$COMMAND" ]; then
+        echo "
+    Usage
+        $SELF $COMMAND SCRIPT_NAME [options]
+
+    Synopsys
+        Install a managed Docker container wrapper script locally.
+
+    Commands:
+
+    Options
+        --image
+                Spefify the docker image. Required for unregistered commands.
+        --tag
+                Specify the image tag, default 'latest'
+        --prefix
+                Specify the local instllation path for the script, default '$HOME/bin'
+        --entrypoint
+                Specify an optional entrypoint override flag
+        --cmd
+                Specify an optional cmd prefix
+
+    Examples
+        $ curl -L $INSTALLER_URL | bash -s $COMMAND --command=gulp --tag=7.0-alpine --prefix=\$HOME/bin
+        $ $SELF $COMMAND gulp --tag=7.0-alpine --prefix=\$HOME/bin"
+
+    #
+    # remove
+       # Uninstall a tool
+    elif [ "remove"    == Update an existing tool "$COMMAND" ]; then Uninstall a tool
+        echo " Update an existing tool
+    Usage
+        $SELF $COMMAND [options]
+
+        Install a Docker container wrapper script locally
+
+    Option
+s
+        --archive=[true|false]
+                sDefault true. Rename the script rather than deleting it
+
+    Examples
+        $ curl -L $INSTALLER_URL | bash -s $COMMAND --command=gulp --tag=7.0-alpine --prefix=\$HOME/bin
+        $ $SELF $COMMAND gulp --tag=7.0-alpine --prefix=\$HOME/bin"
+
+    #
+    # Update
+    #
+    elif [ "update" == "$COMMAND" ]; then
+        echo "
+    Usage
+        $SELF $COMMAND [command] [options]
+
+    Synopsys
+        Install a Docker container wrapper script locally. By default, install
+        a registered command with the default options, otherwse display the
+        list of registered commands.
+
+    Options
+        --list
+                Display the list of registered commands.
+        --image
+                Spefify the docker image. Required for unregistered commands.
+        --tag
+                Specify the image tag, default 'latest'
+        --prefix
+                Specify the local instllation path for the script, default '$HOME/bin'
+        --entrypoint
+                Specify an optional entrypoint override flag
+
+    Examples
+        $ curl -L $INSTALLER_URL | bash -s $COMMAND --command=gulp --tag=7.0-alpine --prefix=\$HOME/bin
+        $ $SELF $COMMAND gulp --tag=7.0-alpine --prefix=\$HOME/bin"
+    fi
+    exit 0
+}
+
+
+
+
+
+
+##############################################################################
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+##############################################################################
+function _docker_tools_install {
+
+    SCRIPT_NAME=$1;
+    shift
+
+    args=$(__get_args $@)
+    opts=$(__get_opts $@)
+    flags=$(__get_flags $@)
+
+    #
+    # Set defaults
+    #
+    if [ "" == "$TAG" ]; then
+        TAG=latest
+    fi
+    if [ "" == "$PREFIX" ]; then
+        PREFIX=$HOME/bin
+    fi
+
+    COMMAND_URL=https://raw.githubusercontent.com/mkenney/docker-npm/${TAG/latest/master}/bin/$COMMAND
+    COMMAND_TEMPFILE=/tmp/docker-npm-$COMMAND-wrapper
+
+    #
+    # Download and validate the script
+    #
+    curl -f -L -s $COMMAND_URL > $COMMAND_TEMPFILE
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo
+        echo "Install failed: Could not download '$COMMAND' from $COMMAND_URL"
+        exit $exit_code
+    fi
+    if grep -q '404: Not Found' $COMMAND_TEMPFILE; then
+        __usage
+        echo
+        echo "Not found: The $COMMAND:$TAG script was not found at $COMMAND_URL";
+        echo "Please verify that the COMMAND and TAG values are correct"
+        exit 404
+    fi
+    if ! [ -s $COMMAND_TEMPFILE ]; then
+        echo
+        echo "Install failed: Invalid or empty '$COMMAND' script or download failed at $COMMAND_URL"
+        exit $exit_code
+    fi
+
+    #
+    # Create the installation directory
+    #
+    mkdir -p $PREFIX
+    exit_code=$?
+    if [ 0 -ne $exit_code ]; then
+        echo
+        echo "Install failed: Could not create directory '$PREFIX'"
+        exit $exit_code
+    fi
+
+    #
+    # Cat the tempfile into the command file instead of moving it so that
+    # symlinkys aren't destroyed
+    #
+    cat $COMMAND_TEMPFILE > $PREFIX/$COMMAND && chmod +x $PREFIX/$COMMAND
+    exit_code=$?
+    if [ 0 -ne $exit_code ]; then
+        echo
+        echo "Install failed: Could not update '$PREFIX/$COMMAND'"
+        exit $exit_code
+    fi
+
+    #
+    # Cleanup the tempfile
+    #
+    rm -f $COMMAND_TEMPFILE
+    exit_code=$?
+    if [ 0 -ne $exit_code ]; then
+        echo
+        echo "Error: Could not delete tempfile '$COMMAND_TEMPFILE'"
+        exit $exit_code
+    fi
+
+    echo
+    echo "$PREFIX/$COMMAND: Installation succeeded"
+    exit 0
+}
+
+function _docker_tools_install_usage {
+}
+function _docker_tools_install_help {
+        echo "
+    Synopsys
+        $SELF install COMMAND [--image=IMAGE] [--tag=TAG] [--prefix=/usr/local/bin] [--entrypoint=CONTAINER-COMMAND] [--cmd=CONTAINER-COMMAND]
+
+    Summary
+        Install a Docker container wrapper script locally. By default, install
+        a registered command with the default options, otherwse display the
+        list of registered commands.
+
+    Options
+        --image
+                Spefify the docker image. Required for unregistered commands.
+        --tag
+                Specify the image tag, default 'latest'
+        --prefix
+                Specify the local instllation path for the script, default '$HOME/bin'
+        --entrypoint
+                Specify an optional entrypoint override flag
+
+    Examples
+        $ curl -L $INSTALLER_URL | bash -s $COMMAND --command=gulp --tag=7.0-alpine --prefix=\$HOME/bin
+        $ $SELF $COMMAND gulp --tag=7.0-alpine --prefix=\$HOME/bin"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################
+#
+#        ########     ##########        #######
+#      ############   ############    ###########
+#     ###        ###  ##        ###  ###       ###
+#     ##          ##  ##         ##  ##
+#     ##          ##  ##        ###  ##
+#     ##############  ############   ##    #######
+#     ##############  ##########     ##    #######
+#     ##          ##  ##      ##     ###       ###
+#     ##          ##  ##       ##     ###########
+#     ##          ##  ##        ##      #######
+#
+##############################################################################
+
+##############################################################################
+#
+#        ###########  ##        ##  ##########
+#      #############  ###      ###  ############
+#     ###             ####    ####  ##        ###
+#     ##              ## ##  ## ##  ##         ##
+#     ##              ##  ####  ##  ##         ##
+#     ##              ##   ##   ##  ##         ##
+#     ##              ##        ##  ##         ##
+#     ###             ##        ##  ##        ###
+#      #############  ##        ##  ############
+#        ###########  ##        ##  ##########
+#
+##############################################################################
+
+__docker_tools_init
+
+#
+# Validate the COMMAND argument
+#
+COMMAND=$1
+shift
+case $COMMAND in
+    clean)
+        __docker_tools_clean $@
+        ;;
+
+    list)
+        __docker_tools_list $@
+        ;;
+
+    install)
+        __install_tools $@
+        ;;
+
+    remove)
+        __remove_tools $@
+        ;;
+
+    update)
+        __update_tools $@
+        ;;
+
+    *)
+        echo "Unknown command: '$INSTALL_ARG'"
+        __usage
+        exit 1
+esac
+
+INSTALL_PREFIX=$(__docker_tools_get_install_prefix $@)
+
+ARGS="$(__parse_args $@)"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+declare -a COMMAND_OPTS
+SCRIPT=
+DOCKER_IMAGE=
+DOCKER_TAG=
+INSTALL_PREFIX=
+
+ARGN=0
+while :; do
+    ARGN=$((ARGN + 1))
+
+    case $1 in
+        --?*)
+        --)
+        clean|install|remove|   update) Uninstall a tool
+            if [ "" == "$COMMAND" ]; then Update an existing tool
+                COMMAND=$1
+            else
+
+            fi
+
+        # help scree
+n
+        #
+        -h|-\?)
+            _devenv__usage
+            ;;
+        --help|help)
+            _devenv_show_help
+            ;;
+        #
+        # Add an exclude pattern to the ctags build
+        # see `man ctags-exuberant`
+        #
+        --ctags-exclude=?*)
+            _devenv_ctags_excludes+=("${1#*=}")
+            ;;
+        #
+        # continue running when detaching, otherwise pause
+        #
+        -d|--daemonize)
+            _devenv_daemonize="true"
+            ;;
+        #
+        # project path
+        #
+        -p)
+            if [ -n "$2" ]; then
+                _devenv_path=$2
+                shift
+            else
+                _devenv_show_help
+            fi
+            ;;
+        --path=?*)
+            _devenv_path=${1#*=}
+            ;;
+        --path|--path=)
+            _devenv_show_help
+            ;;
+        #
+        # target session
+        #
+        -t)
+            if [ -n "$2" ]; then
+                _devenv_target=$2
+                shift
+            else
+                _devenv_show_help
+            fi
+            ;;
+        --target=?*)
+            _devenv_target=${1#*=}
+            ;;
+        --target|--target=)
+            _devenv_show_help
+            ;;
+        #
+        # .tmux.conf path
+        #
+        --tmux=?*)
+            if [ -f ${1#*=} ]; then
+                _tmux_conf_path=$(realpath ${1#*=})
+            else
+                _devenv_error_file_not_found ${1#*=}
+            fi
+            ;;
+        --tmux)
+            if [ -f "$HOME/.tmux.conf" ]; then
+                _tmux_conf_path=$HOME
+            else
+                _devenv_error_file_not_found "$HOME/.tmux.conf"
+            fi
+            ;;
+        #
+        # secondary tmux prefix key binding
+        #
+        --tmux-prefix=?*)
+            _devenv_tmux_prefix=${1#*=}
+            ;;
+        #
+        # .vimrc path
+        #
+        --vimrc=?*)
+            if [ -f ${1#*=} ]; then
+                _vimrc_conf_path=$(realpath ${1#*=})
+            else
+                _devenv_error_file_not_found ${1#*=}
+            fi
+            ;;
+        --vimrc)
+            if [ -f "$HOME/.vimrc" ]; then
+                _vimrc_conf_path=$HOME
+            else
+                _devenv_error_file_not_found "$HOME/.vimrc"
+            fi
+            ;;
+        #
+        # Attach to a running container
+        #
+        attach)
+            _devenv_command=$1
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            ;;
+        #
+        # Attach to a running container
+        #
+        build-tags)
+            _devenv_command=$1
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                _devenv_path='n/a'
+                shift
+            fi
+            ;;
+        #
+        # Initialize a new container
+        #
+        create|init)
+            _devenv_command=$1
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            if [ "" == "$_devenv_path" ]; then
+                _devenv_path=$2
+                shift
+            fi
+            ;;
+        #
+        # Kill a current container
+        #
+        kill)
+            _devenv_command=$1
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            ;;
+        ls)
+            _devenv_command=$1
+            _devenv_secondary_command=$2
+            _devenv_target='n/a'
+            shift
+            ;;
+        #
+        # Restart a running container
+        #
+        refresh|reload|restart)
+            _devenv_command='restart'
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            ;;
+        #
+        # rename session
+        #
+        rename)
+            _devenv_command=$1
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            if [ -n  "$2" ]; then
+                _devenv_secondary_command=$2
+                shift
+            else
+                _devenv__usage
+            fi
+            ;;
+        self-update)
+            _devenv_command=$1
+            _devenv_target='n/a'
+           ;;
+        start|unpause)
+            _devenv_command='start'
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            ;;
+        stop|pause)
+            _devenv_command='stop'
+            if [ "" == "$_devenv_target" ]; then
+                _devenv_target=$2
+                shift
+            fi
+            ;;
+        *)
+            break
+    esac
+
+    shift
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# Set defaults
+#
+if [ "" == "$TAG" ]; then
+    TAG=latest
+fi
+if [ "" == "$PREFIX" ]; then
+    PREFIX=$HOME/bin
+fi
+
+COMMAND_URL=https://raw.githubusercontent.com/mkenney/docker-npm/${TAG/latest/master}/bin/$COMMAND
+COMMAND_TEMPFILE=/tmp/docker-npm-$COMMAND-wrapper
+
+#
+# Download and validate the script
+#
+curl -f -L -s $COMMAND_URL > $COMMAND_TEMPFILE
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+    echo
+    echo "Install failed: Could not download '$COMMAND' from $COMMAND_URL"
+    exit $exit_code
+fi
+if grep -q '404: Not Found' $COMMAND_TEMPFILE; then
+    __usage
+    echo
+    echo "Not found: The $COMMAND:$TAG script was not found at $COMMAND_URL";
+    echo "Please verify that the COMMAND and TAG values are correct"
+    exit 404
+fi
+if ! [ -s $COMMAND_TEMPFILE ]; then
+    echo
+    echo "Install failed: Invalid or empty '$COMMAND' script or download failed at $COMMAND_URL"
+    exit $exit_code
+fi
+
+#
+# Create the installation directory
+#
+mkdir -p $PREFIX
+exit_code=$?
+if [ 0 -ne $exit_code ]; then
+    echo
+    echo "Install failed: Could not create directory '$PREFIX'"
+    exit $exit_code
+fi
+
+#
+# Cat the tempfile into the command file instead of moving it so that
+# symlinkys aren't destroyed
+#
+cat $COMMAND_TEMPFILE > $PREFIX/$COMMAND && chmod +x $PREFIX/$COMMAND
+exit_code=$?
+if [ 0 -ne $exit_code ]; then
+    echo
+    echo "Install failed: Could not update '$PREFIX/$COMMAND'"
+    exit $exit_code
+fi
+
+#
+# Cleanup the tempfile
+#
+rm -f $COMMAND_TEMPFILE
+exit_code=$?
+if [ 0 -ne $exit_code ]; then
+    echo
+    echo "Error: Could not delete tempfile '$COMMAND_TEMPFILE'"
+    exit $exit_code
+fi
+
+echo
+echo "$PREFIX/$COMMAND: Installation succeeded"
+exit 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

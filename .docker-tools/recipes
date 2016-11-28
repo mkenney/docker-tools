@@ -1,0 +1,4 @@
+a-recipe|do-all-the-stuff||mkenney/npm|6.9-alpine||/run-as-user /usr/local/bin/grunt|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+
+gulp-node-6.9|gulp|$HOME/bin|mkenney/npm|6.9-alpine||/run-as-user /usr/local/bin/gulp|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+

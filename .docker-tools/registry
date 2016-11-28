@@ -1,0 +1,17 @@
+
+# This file is created automatically, any changes made here may be overwritten
+# without notice.
+
+npm|npm|$HOME/bin|mkenney/npm|||/run-as-user /usr/local/bin/npm|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+gulp|gulp||mkenney/npm|||/run-as-user /usr/local/bin/gulp|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+grunt|grunt||mkenney/npm|||/run-as-user /usr/local/bin/grunt|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+
+npm-node-6.9|npm||mkenney/npm|7.0-alpine||/run-as-user /usr/local/bin/npm|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+gulp-node-6.9|gulp||mkenney/npm|7.0-alpine||/run-as-user /usr/local/bin/gulp|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+grunt-node-6.9|grunt||mkenney/npm|7.0-alpine||/run-as-user /usr/local/bin/grunt|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+
+npm-node-6.9|npm||mkenney/npm|6.9-alpine||/run-as-user /usr/local/bin/npm|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+gulp-node-6.9|gulp||mkenney/npm|6.9-alpine||/run-as-user /usr/local/bin/gulp|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+grunt-node-6.9|grunt||mkenney/npm|6.9-alpine||/run-as-user /usr/local/bin/grunt|$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro
+
+mysql-cli|mysql||mkenney/mysql-client||||
