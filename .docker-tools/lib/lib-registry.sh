@@ -1,15 +1,16 @@
-
 ##############################################################################
 ##############################################################################
 ##
-##  docker-tools custom recipie definitions
-##
-##  This file is managed by docker-tools, any changes made here may be
-##  overwritten without warning
+##  Manage the tool registry
 ##
 ##############################################################################
 ##############################################################################
 
-# Format:
 #
-# recipe name|tool name|tool prefix|tool template|docker image|image tag|entrypoint|cmd|volumes|docker options|note
+# Download an updated copy of the registry file
+#
+function __registry_update {
+    echo 'do stuff'
+}
+
+

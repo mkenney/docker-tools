@@ -27,7 +27,37 @@
 ##############################################################################
 ##############################################################################
 
-export DOCKER_TOOLS_VERSION=v0.0.1
+# docker-tools config
+# Always allow ENV override
+
+if [ "" == "$DOCKER_TOOLS_VERSION" ]; then
+    if [ "" == "$__DOCKER_TOOLS_VERSION__" ]; then
+        DOCKER_TOOLS_VERSION=master
+    else
+        DOCKER_TOOLS_VERSION=$__DOCKER_TOOLS_VERSION__
+    fi
+fi
+if [ "" == "$DOCKER_TOOLS_PREFIX" ]; then
+    if [ "" == "$__DOCKER_TOOLS_PREFIX__" ]; then
+        DOCKER_TOOLS_PREFIX=/usr/local/bin
+    else
+        DOCKER_TOOLS_PREFIX=$__DOCKER_TOOLS_VERSION__
+    fi
+fi
+if [ "" == "$DOCKER_TOOLS_INSTALL_TMPFILE" ]; then
+    if [ "" == "$__DOCKER_TOOLS_INSTALL_TMPFILE__" ]; then
+        DOCKER_TOOLS_INSTALL_TMPFILE=/tmp/docker-tools-install.tmp
+    else
+        DOCKER_TOOLS_INSTALL_TMPFILE=$__DOCKER_TOOLS_INSTALL_TMPFILE__
+    fi
+fi
+if [ "" == "$DOCKER_TOOLS_ERROR_TMPFILE" ]; then
+    if [ "" == "$__DOCKER_TOOLS_ERROR_TMPFILE__" ]; then
+        DOCKER_TOOLS_ERROR_TMPFILE=/tmp/docker-tools-errors.tmp
+    else
+        DOCKER_TOOLS_ERROR_TMPFILE=$__DOCKER_TOOLS_ERROR_TMPFILE__
+    fi
+fi
 
 #####################################
 # Configuration directories and files
@@ -37,13 +67,17 @@ export DOCKER_TOOLS_VERSION=v0.0.1
 if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then
     DOCKER_TOOLS_CONFIG_DIR=$HOME/.docker-tools
 fi
-if [ "" == "$DOCKER_TOOLS_PREFIX" ]; then
-    DOCKER_TOOLS_PREFIX=/usr/local/bin
-fi
 
+export DOCKER_TOOLS_VERSION
 export DOCKER_TOOLS_CONFIG_DIR
 export DOCKER_TOOLS_PREFIX
 export DOCKER_TOOLS_LIB_DIR=$DOCKER_TOOLS_CONFIG_DIR/lib
 export DOCKER_TOOLS_CONFIG=$DOCKER_TOOLS_CONFIG_DIR/config
 export DOCKER_TOOLS_REGISTRY=$DOCKER_TOOLS_CONFIG_DIR/registry
 export DOCKER_TOOLS_RECIPES=$DOCKER_TOOLS_CONFIG_DIR/recipes
+
+##################
+# Remote resources
+##################
+declare __DOCKER_TOOLS_INSTALLER_URL__=https://raw.githubusercontent.com/mkenney/docker-tools/$DOCKER_TOOLS_VERSION/install.sh
+declare __DOCKER_TOOLS_CONFIG_URL__=https://raw.githubusercontent.com/mkenney/docker-tools/$DOCKER_TOOLS_VERSION/.docker-tools

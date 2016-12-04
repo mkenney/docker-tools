@@ -1,20 +1,16 @@
-#!/usr/bin/env bash
 
-export __DT_VERSION=master
+##############################################################################
+##############################################################################
+##
+##  docker-tools metadata
+##
+##  This file is managed by docker-tools, any changes made here may be lost
+##  without warning.
+##
+##############################################################################
+##############################################################################
 
-##################
-# Remote resources
-##################
-export __DT_INSTALLER_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/install.sh
-export __DT_CONFIG_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/.docker-tools/registry
-export __DT_REGISTRY_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/.docker-tools/registry
-export __DT_LIB_URL=https://raw.githubusercontent.com/mkenney/docker-tools/$__DT_VERSION/lib
-
-
-if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then
-    DOCKER_TOOLS_CONFIG_DIR=$HOME/my_projects/docker-tools/.docker-tools
-fi
-export DOCKER_TOOLS_CONFIG_DIR
-
-
-source "$DOCKER_TOOLS_CONFIG_DIR/lib/globals.sh"
+declare __DOCKER_TOOLS_VERSION__
+declare __DOCKER_TOOLS_PREFIX__
+declare __DOCKER_TOOLS_INSTALL_TMPFILE__
+declare __DOCKER_TOOLS_ERROR_TMPFILE__
