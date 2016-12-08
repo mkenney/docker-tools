@@ -191,11 +191,12 @@ function __get_opt {
     local opt
     local option
     local value
+    local default_value=1
 
     for opt in "$(__get_opts $@)"; do
         option=${opt%%=*}
         value=${opt#*=}
-        if [ "" == "$value" ]; then value=1; fi
+        if [ "" == "$value" ]; then value=$default_value; fi
         case $option in
             $1)
                 ret_val="$value"

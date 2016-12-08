@@ -45,6 +45,14 @@ function __term__ {
     printf -- "$ret_val"
 }
 
+function __update_image__ {
+    docker pull $(__image__):$(__tag__)
+}
+
+function __update_script__ {
+    printf "@todo write the __update_script__ function... ;-)\n"
+}
+
 function __volumes__ {
     local -a ret_val
     local volume

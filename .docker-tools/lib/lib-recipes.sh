@@ -17,6 +17,7 @@
 ##  8 - [volumes]
 ##  9 - [docker options]
 ## 10 - [note]
+## 11 - [recipe_source] - populated by __recipe_get
 ##
 ##############################################################################
 ##############################################################################
@@ -310,12 +311,210 @@ function __recipe_to_args {
     printf "${script}${options}"
 }
 
+
+#
+# @param recipe_source
+#
+declare _recipe_source_status_style_=$(_s indigo)
+declare _recipe_source_status_="●"
+function __recipe_get_source_status {
+    local recipe_source=$1
+    if [ "recipes" == "$recipe_source" ]; then
+        _recipe_source_status_style_=$(_s blue bt)
+    fi
+
+    printf "${_recipe_source_status_style_}|${_recipe_source_status_}"
+}
+
+#
+# @param recipe_name
+# @param tool_path
+#
+declare _rstatus_na_no_conflict_style_=$(_s grey b)
+declare _rstatus_na_no_conflict_status_="not installed"
+declare _rstatus_na_unmanaged_style_=$(_s orange b)
+declare _rstatus_na_unmanaged_status_="unmanaged file installed"
+declare _rstatus_na_managed_style_=$(_s orange b)
+declare _rstatus_na_managed_status_="$installed_recipe_name installed"
+declare _rstatus_outdated_style_=$(_s yellow bt b)
+declare _rstatus_outdated_status_="outdated"
+declare _rstatus_updated_style_=$(_s green bt b)
+declare _rstatus_updated_status_="installed"
+declare _recipe_status_style_
+declare _recipe_status_
+function __recipe_get_status {
+    local recipe_name=$1
+    local tool_path=$2
+
+    _recipe_status_style_=$_rstatus_na_no_conflict_style_
+    _recipe_status_=$_rstatus_na_no_conflict_status_
+
+    if [ -f "$tool_path" ]; then
+        _recipe_status_style_=$_rstatus_na_unmanaged_style_
+        _recipe_status_=$_rstatus_na_unmanaged_status_
+        if grep -q '__TOOLS_VERSION__=' "$tool_path"; then
+            _recipe_status_style_=$_rstatus_na_managed_style_
+            _recipe_status_=$_rstatus_na_managed_status_
+            if grep -q "__RECIPE_NAME__=${recipe_name/\"/}" "$tool_path"; then
+                _recipe_status_style_=$_rstatus_outdated_style_
+                _recipe_status_=$_rstatus_outdated_status_
+                if grep -q "^__TOOLS_VERSION__=${DOCKER_TOOLS_VERSION/\"/}$" "$tool_path"; then
+                    _recipe_status_style_=$_rstatus_updated_style_
+                    _recipe_status_=$_rstatus_updated_status_
+                fi
+            fi
+        fi
+    fi
+
+    printf "${_recipe_status_style_}|${_recipe_status_}"
+}
+
+#
+# @param recipe name
+# @param tool path
+# @param default style
+# @param default status
+#
+
+declare _rtstatus_na_unmanaged_style_=$(_s red)
+declare _rtstatus_na_unmanaged_status_="unmanaged"
+
+declare _rtstatus_na_managed_style_=$(_s green dk)
+
+declare _rtstatus_na_1off_style_=$(_s orange)
+declare _rtstatus_na_1off_status_="1-off"
+
+declare _recipe_tool_status_style_
+declare _recipe_tool_status_
+
+function __recipe_get_tool_status {
+
+    local recipe_name=$1
+    local tool_path=$2
+    local default_style=$3
+    local default_status=$4
+
+    # this recipe
+    _recipe_tool_status_style_=$default_style
+    _recipe_tool_status_=$default_status
+
+    # installed, may not be managed
+    if [ -f "$tool_path" ]; then
+        _recipe_tool_status_style_=${_rtstatus_na_unmanaged_style_}
+        _recipe_tool_status_=${_rtstatus_na_unmanaged_status_}
+
+        # installed by docker-tools
+        if grep -q '__TOOLS_VERSION__=' "$tool_path"; then
+            # not this recipe
+            if ! grep -q "__RECIPE_NAME__=${recipe_name/\"/}" "$tool_path"; then
+
+                # installed / other recipe
+                _recipe_tool_status_style_=${_rtstatus_na_managed_style_}
+                _recipe_tool_status_="$(sed -n -e 's/^declare __RECIPE_NAME__=//p' "$tool_path")"
+
+                if [ "" == "$_recipe_tool_status_" ]; then
+                    # installed / no recipe
+                    _recipe_tool_status_style_=${_rtstatus_na_1off_style_}
+                    _recipe_tool_status_=${_rtstatus_na_1off_status_}
+                fi
+            fi
+        fi
+    fi
+
+    printf "${_recipe_tool_status_style_}|${_recipe_tool_status_}"
+}
+
+
+#
+# @param recipe name
+# @param tool path
+# @param default style
+# @param default status
+#
+declare _recipe_path_status_style_
+declare _recipe_path_status_
+function __recipe_get_path_status {
+
+    local recipe_name=$1
+    local tool_path=$2
+    local path_path=`which $(basename $tool_path)`
+    local default_style=$3
+    local default_status=$4
+
+    # not installed
+    _recipe_path_status_style_=$(_s grey b)
+    _recipe_path_status_="not found"
+
+    if [ -f "$path_path" ]; then
+        # installed / unmanaged
+        _recipe_path_status_style_=$(_s red bt b)
+        _recipe_path_status_="unmanaged"
+
+        if grep -q '__TOOLS_VERSION__=' "$path_path"; then
+            # installed by docker-tools
+            if grep -q "__RECIPE_NAME__=${recipe_name/\"/}" "$path_path"; then
+                # installed / this recipe
+                _recipe_path_status_style_=$default_style
+                _recipe_path_status_=$default_status
+
+            else
+                # installed / other recipe
+                _recipe_path_status_style_=$(_s green dk b)
+                _recipe_path_status_="$(sed -n -e 's/^declare __RECIPE_NAME__=//p' "$path_path")"
+
+                if [ "" == "$_recipe_path_status_" ]; then
+                    # installed / no recipe
+                    _recipe_path_status_style_=$(_s orange)
+                    _recipe_path_status_="1-off"
+                fi
+            fi
+        fi
+    fi
+
+    printf "${_recipe_path_status_style_}|${_recipe_path_status_}"
+}
+
 #
 # Generate recipe documentation
+#
+# TODO The styling is horribly slow, replace with a docker service or something
 #
 # @param Required, recipe name
 # @option source Optional, a recipe source file in $DOCKER_TOOLS_CONFIG_DIR
 # @return Human-readable construct describing the recipe
+#
+#
+# Notes
+#   $recipe_source
+#   Sourcefile of this recipe
+#       - registry                   :                                                  :
+#       - recipes                    :                                                  :
+#
+#   $recipe_status
+#   Status of this recipe
+#       - not installed, no conflict        : local _recipe_status_style_=$(_s grey b)         ; local _recipe_status_="not installed";
+#       - not installed, conflict           : local _recipe_status_style_=$(_s orange b)       ; local _recipe_status_="not installed";
+#       - not installed, conflict recipe    : local _recipe_status_style_=$(_s orange b)       ; local _recipe_status_="not installed";
+#       - not installed, conflict unmanaged : local _recipe_status_style_=$(_s orange b)       ; local _recipe_status_="not installed";
+#       - installed, out-of-date            : local _recipe_status_style_=$(_s yellow bt b)    ; local _recipe_status_="outdated";
+#       - installed, up-to-date             : local _recipe_status_style_=$(_s green bt b)     ; local _recipe_status_="installed";
+#
+#   $tool_status
+#   Status of the file at this recipes tool location
+#       - 1-off unsaved tool         : local _tool_status_style_=$(_s orange)           ; local _tool_status="1-off"
+#       - other recipe installed     : local _tool_status_style_=$(_s green dk)         ; local _tool_status="recipe: $tool_recipe_name"
+#       - installed                  : local _tool_status_style_=$_recipe_status_style_ ; local _tool_status_=$_recipe_status_
+#       - not a docker-tools tool    : local _tool_status_style_=$(_s red)              ; local _tool_status="unmanaged"
+#       - not installed at all       : local _tool_status_style_=$_recipe_status_style_ ; local _tool_status=$_recipe_status_
+#
+#   $path_status
+#   Status of the tool in your $PATH
+#       - no tool in path            : local _path_status_style_=$(_s grey b)           ; local _path_status_="not found"
+#       - not a docker-tools tool    : local _path_status_style_=$(_s red bt b)         ; local _path_status_="unmanaged"
+#       - this recipe                : local _path_status_style_=$_recipe_status_style_ ; local _path_status_=$_recipe_status_
+#       - other recipe installed     : local _path_status_style_=$(_s green dk b)       ; local _path_status_="recipe: $path_recipe_name"
+#       - 1-off unsaved tool         : local _path_status_style_=$(_s orange)           ; local _path_status_="1-off"
+#
 #
 function __recipe_describe {
     IFS=$"$__recipe_delimiter__"
@@ -327,12 +526,11 @@ function __recipe_describe {
         exit 1
     fi
 
-    local recipe_name="$1"
 
-    #
-    # Load the recipe data
-    #
-    local -a recipe_parts=($(__recipe_get $@))
+    # recipe & tool data
+    local recipe=$(__recipe_get $@)
+    local -a recipe_parts=($recipe)
+    local recipe_name=${recipe_parts[0]}
     local tool_name=${recipe_parts[1]}
     local tool_prefix=${recipe_parts[2]}
     local tool_template=${recipe_parts[3]}
@@ -341,104 +539,125 @@ function __recipe_describe {
     local entrypoint=${recipe_parts[6]}
     local cmd=${recipe_parts[7]}
     local volumes=${recipe_parts[8]}
-    local recipe_source=${recipe_parts[9]}
+    local docker_options=${recipe_parts[9]}
     local recipe_note=${recipe_parts[10]}
+    local recipe_source=${recipe_parts[11]}
 
+    # defaults
     if [ "" == "$tool_prefix" ]; then tool_prefix=$DOCKER_TOOLS_PREFIX; fi
     if [ "" == "$image_tag" ];   then image_tag="latest";               fi
+    if [ "" == "$cmd" ];         then cmd="n/a";                        fi
+    if [ "" == "$entrypoint" ];  then entrypoint="n/a";                 fi
 
-
-    # expand the tool path
+    # full tool path
     local tool_path="$(eval "echo $tool_prefix/$tool_name")"
 
-    # installation status
-    local tool_installed=0
-    local tool_managed=0
-    local tool_updated=0
+    # recipe_status[0] - style
+    # recipe_status[1] - text
+    local -a recipe_status=($(__recipe_get_status $recipe_name $tool_path))
 
-    if [ -f "$tool_path" ]; then
-        tool_installed=1
-        if grep -q '__TOOLS_VERSION__=' "$tool_path" && grep -q "__RECIPE_NAME__=${recipe_name/\"/}" "$tool_path"; then
-            tool_managed=1
-            if grep -q "^__TOOLS_VERSION__=${DOCKER_TOOLS_VERSION/\"/}$" "$tool_path"; then
-                tool_updated=1
-            fi
-        fi
-    fi
 
+    # source_status[0] - style
+    # source_status[1] - text
+    local -a source_status=($(__recipe_get_source_status $recipe_source))
+
+    # tool_status[0] - style
+    # tool_status[1] - text
+    local -a tool_status=($(__recipe_get_tool_status $recipe_name $tool_path ${recipe_status[0]} ${recipe_status[1]}))
+
+    # path_status[0] - style
+    # path_status[1] - text
+    local -a path_status=($(__recipe_get_path_status $recipe_name $tool_path ${recipe_status[0]} ${recipe_status[1]}))
+
+    #
     # Template vars
-    local color_installed=$(_s green bt)
-    local color_outdated=$(_s yellow bt)
-    local color_unmanaged=$(_s brown)
-    local color_not_installed=$(_s b)
+    #
+    # ✔ ☑ ☆ ★ ✧ ¤ * ｡ﾟ. ☆  ☺  ☻ ☸ ‣
+    # ⦿ ⁌ ●
+    # 😀 😊 😐 😶 😮 😲 😖 😡 😷 💀
+    #
+    local _recipe_source_="${source_status[0]}${source_status[1]}$(_s r white)"
+    local _recipe_status_="${recipe_status[0]}${recipe_status[1]}$(_s r white)"
+    local _tool_status_="${tool_status[0]}${tool_status[1]}$(_s r white)"
+    local _path_status_="${path_status[0]}${path_status[1]}$(_s r white)"
+    local _recipe_name_="$(_s u b)${recipe_name}$(_s r white)"
+    local _t_hr_="$(tput setaf 235)────────────────$(_s r white)"
+    local _i_hr_="$(tput setaf 235)───────────────$(_s r white)"
+    local _c_hr_="$(tput setaf 235)─────────────────$(_s r white)"
+    local _e_hr_="$(tput setaf 235)──────────$(_s r white)"
+    local _v_hr_=""
+    local _tool_path_="$(_s grey i)${tool_path}$(_s r white)"
+    local _image_="$(_s grey i)${docker_image}:${image_tag}$(_s r white)"
+    local _cmd_="$(_s grey i)${cmd}$(_s r white)"
+    local _entrypoint_="$(_s grey i)${entrypoint}$(_s r white)"
 
-    local _status_installed_="$(_s green bt)installed$(_s r)"
-    local _status_outofdate_="$(_s yellow bt)outdated$(_s r)"
-    local _status_unmanaged_="$(_s brown)unmanaged$(_s r)"
-    local _status_not_installed_="$(_s b)not installed$(_s r)"
-
-    local _icon_installed_="→"
-    local _icon_outofdate_="→"
-    local _icon_unmanaged_="⤳"
-    local _icon_not_installed_="─"
-
-    local _recipe_name_="$(_s u)${recipe_name}$(_s r)"
-    local _tool_path_="$(_s cyan lt)${tool_path}$(_s r)"
-    local _image_=$docker_image:$image_tag
-    local _managed_status_="‣"
-    local _recipe_status_=$_status_not_installed_
-
-    local _recipe_status_icon_="‣"
-    if [ "registry" == "$recipe_source" ]; then
-        _recipe_status_icon_="*"
-    fi
-
-
-#✔ ☑ ☆ ★ ✧ ¤ * ｡ﾟ. ☆  ☺  ☻ ☸    ‣
-
-
-
-
-    if [ 1 -eq $tool_installed ]; then
-        _recipe_status_=$_status_unmanaged_
-        _recipe_status_icon_="$(_s red bt)${_recipe_status_icon_}$(_s r)"
-        _tool_path_="$(_s grey)${tool_path}$(_s r)"
-
-        if [ 1 -eq $tool_managed ]; then
-            _recipe_status_=$_status_installed_
-            _recipe_status_icon_="$(_s green bt)${_recipe_status_icon_}$(_s r)"
-            _tool_path_="$(_s white bt bold)${tool_path}$(_s r)"
-
-            if [ 1 -ne $tool_updated ]; then
-                _recipe_status_=$_status_outofdate_
-                _recipe_status_icon_="$(_s yellow bt)${_recipe_status_icon_}$(_s r)"
-                _tool_path_="$(_s i)${tool_path}$(_s r)"
-            fi
-        fi
-    fi
-
-
-    ret_val="
-
-${_recipe_status_icon_} ${_recipe_name_} -- ${_tool_path_}
-    ${_recipe_status_}
-
-    image      - ${_image_}"
-
-    ret_val="$ret_val\n"
-    if [ "" != "$entrypoint" ]; then
-        ret_val="$ret_val    entrypoint - $entrypoint\n"
-    fi
-    if [ "" != "$cmd" ]; then
-        ret_val="$ret_val    command    - $cmd\n"
-    fi
+    # break down and style the volume data
+    local _volumes_=
     if [ "" != "$volumes" ]; then
-        ret_val="$ret_val    volumes    - ${volumes/;/\n                 - }\n"
+        local -a vols=($(echo "$volumes" | tr ";" "|"))
+        local -a vol_parts
+        local _src_
+        local _dest_
+        local _mode_
+
+        for volume in $(echo "$volumes" | tr ";" "|"); do
+            vol_parts=($(echo "$volume" | tr ":" "|"))
+            _src_="$(_s white lt i)${vol_parts[0]}$(_s r white)"
+            _dest_="$(_s white lt i)${vol_parts[1]}$(_s r white)"
+            local mode=${vol_parts[2]}
+            local mode_part
+            local mode_icon
+            local -a modes
+            local a=0
+            for mode_part in $(echo $mode | tr "," "|" | sort | uniq); do
+                case $mode_part in
+                    rw)
+                        mode_part="$(_s red bt)${mode_part}$(_s r white)"
+                        mode_icon="⇆"
+                        ;;
+
+                    ro)
+                        mode_part="$(_s blue dk)${mode_part}$(_s r white)"
+                        if [ "" == "$mode_icon" ]; then mode_icon="→"; fi
+                        ;;
+
+                    *)
+                        mode_part="$(_s grey)${mode_part}$(_s r white)"
+                        if [ "" == "$mode_icon" ]; then mode_icon="⇼"; fi
+                        ;;
+                esac
+                if [ "" != "$mode_part" ]; then
+                    modes[$a]=$mode_part
+                    a=$((a + 1))
+                fi
+            done
+            _mode_="$(printf "${modes[@]}" | tr " " ",")"
+            if [ "" == "${_mode_}" ]; then
+                _mode_="$(_s red bt)rw$(_s r white)"
+            fi
+
+            _volumes_="${_volumes_}
+          ${mode_icon} ${_src_} : ${_dest_} : ${_mode_}"
+            mode_part=
+            mode_icon=
+        done
     fi
 
-#hash foo 2>/dev/null
+    #
+    # Template
+    #
+    ret_val="$(_s white)
+
+ ${_recipe_source_} ${_recipe_name_} ${_recipe_status_}
+     ├─ tool ${_t_hr_} ${_tool_path_} ${_tool_status_}
+     ├─ image ${_i_hr_} ${_image_}
+     ├─ cmd ${_c_hr_} ${_cmd_}
+     ├─ entrypoint ${_e_hr_} ${_entrypoint_}
+     └─ volumes${_v_hr_} ${_volumes_}"
+#"──────────────────────────────────────────────────────────────────────────────"
 
     printf "$ret_val"
+
 }
 
 

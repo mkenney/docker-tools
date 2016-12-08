@@ -122,3 +122,93 @@ $(_s b)EXAMPLES$(_s r)
           $(_s i)--save_as=my-phpunit-recipe$(_s r)"
 }
 
+#
+# install
+#
+function __docker_tools_install {
+    local old_IFS=IFS
+
+    ########################
+    # 2 modes
+    #   if no recipe is specified, then at minimum --image and --name options
+    #   are required
+    #
+    #   if a recipe is specified, no options are required, but any may be
+    #   passed as a 1-time override of the corresponding recipe value
+    #########################
+
+    local recipe_name="$(__get_arg 1 $@)"
+    local opt_name="$(__get_opt name $@)"
+    local opt_prefix="$(__get_opt prefix $@)"
+    local opt_type="$(__get_opt type $@)"
+    local opt_image="$(__get_opt image $@)"
+    local opt_tag="$(__get_opt tag $@)"
+    local opt_entrypoint="$(__get_opt entrypoint $@)"
+    local opt_cmd="$(__get_opt cmd $@)"
+    local opt_volumes="$(__get_opt volumes $@)"
+
+    if [ "" == "$recipe_name" ]; then
+        if [ "" == "$opt_image" ] || [ "" == "$opt_name" ]; then
+            __show_usage install " Error: A recipe name must be specified or --image AND --name options are
+ required"
+            exit 1
+        fi
+    fi
+ Error: A recipe name must be specified or --image AND --name options are
+ required
+    # Tool recipe
+    local -a recipe
+    IFS=$"$__recipe_delimiter__"
+    recipe=($(__recipe_get $recipe_name))
+    IFS=$old_IFS
+    if [ "" != "$opt_cmd" ];        then recipe[6]="$opt_cmd";        fi
+    if [ "" != "$opt_entrypoint" ]; then recipe[5]="$opt_entrypoint"; fi
+    if [ "" != "$opt_image" ];      then recipe[3]="$opt_image";      fi
+    if [ "" != "$opt_tag" ];        then recipe[4]="$opt_tag";        fi
+    if [ "" != "$opt_name" ];       then recipe[1]="$opt_name";       fi
+    if [ "" != "$opt_prefix" ];     then recipe[2]="$opt_prefix";     fi
+    if [ "" != "$opt_type" ];       then recipe[3]="$opt_prefix";     fi
+    if [ "" != "$opt_volumes" ];    then recipe[7]="$opt_volumes";    fi
+
+    if [ "" == "$opt_name" ]; then
+        echo "Error - a tool name was not provided"
+        exit 1
+    fi
+
+
+    # Tool tempfile
+    cp $DOCKER_TOOLS_LIB_DIR/templates/tool.sh $__INSTALL_TMPFILE__
+
+        # tool info
+    sed -i "s/declare __TOOLS_VERSION__=/declare __TOOLS_VERSION__=$DOCKER_TOOLS_VERSION/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_NAME__=/declare __RECIPE_NAME__=$recipe_name/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __TOOLS_LIB_DIR__=/declare __TOOLS_LIB_DIR__=$DOCKER_TOOLS_LIB_DIR/" $__INSTALL_TMPFILE__
+
+        # tool recipe
+    sed -i "s/declare __RECIPE_CMD__=/declare __RECIPE_CMD__=$opt_cmd/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_ENTRYPOINT__=/declare __RECIPE_ENTRYPOINT__=$opt_entrypoint/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_IMAGE__=/declare __RECIPE_IMAGE__=$opt_image/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_IMAGE_TAG__=/declare __RECIPE_IMAGE_TAG__=$opt_tag/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_TOOL__=/declare __RECIPE_TOOL__=$opt_name/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_PREFIX__=/declare __RECIPE_PREFIX__=$opt_prefix/" $__INSTALL_TMPFILE__
+    sed -i "s/declare __RECIPE_VOLUMES__=/declare __RECIPE_VOLUMES__=$opt_volumes/" $__INSTALL_TMPFILE__
+
+    if [ "" == "$opt_prefix" ]; then opt_prefix=$DOCKER_TOOLS_PREFIX; fi
+    #result=$( (cat ${__INSTALL_TMPFILE__} > $opt_prefix/$opt_name) 2>${__ERROR_TMPFILE__})
+    #exit_code=$?
+    #errors=$(< ${__ERROR_TMPFILE__})
+
+
+echo "result:$result"
+echo "exit_code:$exit_code"
+echo "errors:$errors"
+#sed -i "s/php_value newrelic.appname emt_web-dev/php_value newrelic.appname $APP_NAME/" /var/www/html/documentroot/.htaccess
+
+
+echo "__docker_tools_install:recipe:${recipe[@]}"
+
+
+
+
+}
+

@@ -4,7 +4,7 @@
 ##############################################################################
 ##
 ##  This is the bootstrap file for a `docker run` wrapper script generated
-##  using the `docker-tools` command and any modifications made here may be
+##  using the `docker-tools` command. Any modifications made here may be
 ##  overwritten without notice.
 ##
 ##  See `docker-tools --help` for more information.
@@ -12,24 +12,24 @@
 ##############################################################################
 ##############################################################################
 
-# tool info
+# docker-tools metadata
 declare __TOOLS_VERSION__=
-declare __RECIPE_NAME__=
 declare __TOOLS_LIB_DIR__=
 
-# tool recipe
-declare __RECIPE_CMD__=
-declare __RECIPE_ENTRYPOINT__=
+# tool metadata
+declare __TOOL_NAME__=
+declare __TOOL_PREFIX__=
+declare __TOOL_TEMPLATE__=
+
+# recipe metadata
+declare __RECIPE_NAME__=asdf
 declare __RECIPE_IMAGE__=
 declare __RECIPE_IMAGE_TAG__=
-declare __RECIPE_TOOL__=
-declare __RECIPE_PREFIX__=
+declare __RECIPE_ENTRYPOINT__=
+declare __RECIPE_CMD__=
 declare __RECIPE_VOLUMES__=
-
-# tool resources
-source "${__TOOLS_LIB_DIR__}/globals.sh"
-source "${__TOOLS_LIB_DIR__}/lib-cli.sh"
-source "${__TOOLS_LIB_DIR__}/lib-ui.sh"
+declare __RECIPE_OPTIONS__=
+declare __RECIPE_NOTE__=
 
 ##############################################################################
 ##############################################################################
@@ -38,6 +38,14 @@ source "${__TOOLS_LIB_DIR__}/lib-ui.sh"
 ##
 ##############################################################################
 ##############################################################################
+
+# import required resources
+if [ ! -f "${__TOOLS_LIB_DIR__}/globals.sh" ]; then >&2 printf "Required resource missing: '${__TOOLS_LIB_DIR__}/globals.sh'\n"; exit 1; fi
+if [ ! -f "${__TOOLS_LIB_DIR__}/lib-cli.sh" ]; then >&2 printf "Required resource missing: '${__TOOLS_LIB_DIR__}/lib-cli.sh'\n"; exit 2; fi
+if [ ! -f "${__TOOLS_LIB_DIR__}/lib-ui.sh" ];  then >&2 printf "Required resource missing: '${__TOOLS_LIB_DIR__}/lib-ui.sh'\n";  exit 3; fi
+source "${__TOOLS_LIB_DIR__}/globals.sh"
+source "${__TOOLS_LIB_DIR__}/lib-cli.sh"
+source "${__TOOLS_LIB_DIR__}/lib-ui.sh"
 
 # execute the tool
 declare __TEMPLATE_DIR__="${__TOOLS_LIB_DIR__}/templates/tool"
