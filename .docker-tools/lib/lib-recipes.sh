@@ -526,11 +526,11 @@ function __recipe_describe {
         exit 1
     fi
 
-
     # recipe & tool data
-    local recipe=$(__recipe_get $@)
+    local recipe=$1 #$(__recipe_get $@)
     local -a recipe_parts=($recipe)
     local recipe_name=${recipe_parts[0]}
+
     local tool_name=${recipe_parts[1]}
     local tool_prefix=${recipe_parts[2]}
     local tool_template=${recipe_parts[3]}

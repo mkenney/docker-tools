@@ -65,18 +65,9 @@ function __docker_tools_list {
     for recipe_file in "${recipe_files[@]}"; do
         while read recipe_line; do
             if [ "" != "${recipe_line:0:1}" ] && [ "#" != "${recipe_line:0:1}" ]; then
-                parts=($(echo "$recipe_line" | tr "$__recipe_delimiter__" "\n"))
-                recipe_name="${parts[0]}"
-                recipes[$a]="${recipe_name}:$(basename ${recipe_file})"
-                a=$((a + 1))
+                ret_val="$ret_val $(__recipe_describe "${recipe_line}|$(basename ${recipe_file})" )"
             fi
         done < $recipe_file
-    done
-
-    for recipe in $(echo "${recipes[@]}" | tr " " "\n" | sort | uniq); do
-        recipe_name=${recipe%%:*}
-        recipe_file=${recipe#*:}
-        ret_val="$ret_val $(__recipe_describe $recipe_name --source=$recipe_file)"
     done
 
     printf "$ret_val"
