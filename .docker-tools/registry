@@ -1,24 +1,24 @@
 RecipeName,ToolName,ToolPrefix,ToolTemplate,DockerImage,DockerTag,ContainerVolumes,ContainerEnv,ContainerEntrypoint,ContainerCmd,DockerOptions,RecipeNotes
-node,node,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/node,,A node command that writes files as the current user running on Node 7.0
-bower,bower,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/bower,,A bower command that writes files as the current user running on Node 7.0
-generate-md,generate-md,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/generate-md,,A generate-md command that writes files as the current user running on Node 7.0
-grunt,grunt,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/grunt,,A grunt command that writes files as the current user running on Node 7.0
-gulp,gulp,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/gulp,,A gulp command that writes files as the current user running on Node 7.0
-npm,npm,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/npm,,A npm command that writes files as the current user running on Node 7.0
-yarn,yarn,,tool,mkenney/npm,7.0-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/yarn,,A yarn command that writes files as the current user running on Node 7.0
-node6.9,node,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/node,,A node command that writes files as the current user running on Node 6.9
-bower-node6.9,bower,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/bower,,A bower command that writes files as the current user running on Node 6.9
-generate-node6.9-md,generate-md,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/generate-md,,A generate-md command that writes files as the current user running on Node 6.9
-grunt-node6.9,grunt,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/grunt,,A grunt command that writes files as the current user running on Node 6.9
-gulp-node6.9,gulp,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/gulp,,A gulp command that writes files as the current user running on Node 6.9
-npm-node6.9,npm,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/npm,,A npm command that writes files as the current user running on Node 6.9
-yarn-node6.9,yarn,,tool,mkenney/npm,6.9-alpine,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,/run-as-user /usr/local/bin/yarn,,A yarn command that writes files as the current user running on Node 6.9
-mysql,mysql,,tool,mkenney/mysql-client,,$HOME/.my.cnf:/root/.my.cnf:ro;$HOME/.mysql_history:/root/.mysql_history:rw,,,,,A simple mysql client
-php-5,php,,tool,mkenney/php-base,php5,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,,,A PHP-5 CLI executable
-php-7,php,,tool,mkenney/php-base,,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,,,A PHP-7 CLI executable
-composer-5,composer,,tool,mkenney/composer,php5,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,,,A PHP-5 CLI executable
-composer-7,composer,,tool,mkenney/composer,,$(pwd):/src:rw;$HOME/.ssh:/home/dev/.ssh:ro,,,,,A PHP-7 CLI executable
-phpunit-5,phpunit,,tool,mkenney/phpunit,php5,$(pwd):/src:rw,,,,,A PHP-5 CLI executable
-phpunit-7,phpunit,,tool,mkenney/phpunit,,$(pwd):/src:rw,,,,,A PHP-7 CLI executable
-phpdoc-5,phpdoc,,tool,mkenney/phpdoc,php5,$(pwd):/src:rw,,,,,A PHP-5 CLI executable
-phpdoc-7,phpdoc,,tool,mkenney/phpdoc,,$(pwd):/src:rw,,,,,A PHP-7 CLI executable
+bower,bower,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/bower,,A bower command that writes files as the current user running on Node 7.0
+bower-node6.9,bower,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/bower,,A bower command that writes files as the current user running on Node 6.9
+composer-5,composer,,tool,mkenney/composer,php5,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,,,A PHP-5 `composer` executable
+composer-7,composer,,tool,mkenney/composer,,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,,,A PHP-7 `composer` executable
+generate-md,generate-md,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/generate-md,,A generate-md command that writes files as the current user running on Node 7.0
+generate-node6.9-md,generate-md,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/generate-md,,A generate-md command that writes files as the current user running on Node 6.9
+grunt,grunt,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/grunt,,A grunt command that writes files as the current user running on Node 7.0
+grunt-node6.9,grunt,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/grunt,,A grunt command that writes files as the current user running on Node 6.9
+gulp,gulp,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/gulp,,A gulp command that writes files as the current user running on Node 7.0
+gulp-node6.9,gulp,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/gulp,,A gulp command that writes files as the current user running on Node 6.9
+mysql,mysql,,tool,mkenney/mysql-client,,"[""$HOME/.my.cnf:/root/.my.cnf:ro"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,,,A simple mysql client
+node,node,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/node,,A node command that writes files as the current user running on Node 7.0
+node6.9,node,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/node,,A node command that writes files as the current user running on Node 6.9
+npm,npm,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/npm,,A npm command that writes files as the current user running on Node 7.0
+npm-node6.9,npm,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/npm,,A npm command that writes files as the current user running on Node 6.9
+php-5,php,,tool,mkenney/php-base,php5,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,,,A PHP-5 CLI executable
+php-7,php,,tool,mkenney/php-base,,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,,,A PHP-7 CLI executable
+phpdoc-5,phpdoc,,tool,mkenney/phpdoc,php5,"[""$(pwd):/src:rw""]",,,,,A PHP-5 `phpdoc` executable
+phpdoc-7,phpdoc,,tool,mkenney/phpdoc,,"[""$(pwd):/src:rw""]",,,,,A PHP-7 `phpdoc` executable
+phpunit-5,phpunit,,tool,mkenney/phpunit,php5,"[""$(pwd):/src:rw""]",,,,,A PHP-5 `phpunit` executable with OCI support
+phpunit-7,phpunit,,tool,mkenney/phpunit,,"[""$(pwd):/src:rw""]",,,,,A PHP-7 `phpunit` executable with OCI support
+yarn,yarn,$HOME/bin,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/yarn,,A yarn command that writes files as the current user running on Node 7.0
+yarn-node6.9,yarn,,tool,mkenney/npm,6.9-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro""]",,,/run-as-user /usr/local/bin/yarn,,A yarn command that writes files as the current user running on Node 6.9

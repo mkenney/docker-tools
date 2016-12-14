@@ -14,15 +14,11 @@ import (
  * Represents all tool recipes available to the system
  */
 type Recipes [1000]*Recipe
-//type Recipes struct  {
-//    recipes map[string]*Recipe
-//    files   map[string]bool // True if loaded, else false
-//}
 
 /**
  *
  */
-func New() *Recipes {
+func NewRecipes() *Recipes {
     recipes := new(Recipes)
     return recipes
 }
@@ -97,19 +93,16 @@ func (this *Recipes) SetRecipe(recipe_name, recipe_source string, recipe *Recipe
  * @return {bool}   true on success, else false
  * @return {error}  error on error, else nil
  */
-func (this *Recipes) Load(recipe_file string, ret_chan chan bool, err_chan chan error) {
-    var ret_val bool
+func (this *Recipes) Load(recipe_file string) (error) {
     var ret_err error
 
     if _, err := os.Stat(recipe_file); os.IsNotExist(err) {
-        ret_val = false
         ret_err = err
         log.Fatalf("File not found '%v'", recipe_file)
 
     } else {
         file, err := os.Open(recipe_file)
         if nil != err {
-            ret_val = false
             ret_err = errors.New(fmt.Sprintf("Error opening recipe file '%v'", recipe_file))
             log.Fatalf("Error opening recipe file '%v'", recipe_file)
         }
@@ -117,27 +110,26 @@ func (this *Recipes) Load(recipe_file string, ret_chan chan bool, err_chan chan 
 
         reader := csv.NewReader(file)
         recipe_idx := 0
+        line_idx := 0
         for {
             line, err := reader.Read()
             if io.EOF == err  {
                 break
             } else if nil != err {
-                ret_val = false
                 ret_err = errors.New(fmt.Sprintf("Error reading recipe file '%v': %v", recipe_file, err))
                 log.Fatalf("Error reading recipe file '%v': %v", recipe_file, err)
             }
-
-            record := make([]string, 13)
-            for k, v := range line {record[k] = v}
-            // Append the filename
-            record[12] = path.Base(recipe_file)
-            recipe := createRecipeFromData(record)
-
-            this[recipe_idx] = recipe
-            recipe_idx++
+            if 0 < line_idx { // Skip the header row
+                record := make([]string, 13)
+                for k, v := range line {record[k] = v}
+                record[12] = path.Base(recipe_file) // Append the recipe source
+                recipe := NewRecipe(record)
+                this[recipe_idx] = recipe
+                recipe_idx++
+            }
+            line_idx++
         }
     }
 
-    ret_chan<- ret_val
-    err_chan<- ret_err
+    return ret_err
 }
