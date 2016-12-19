@@ -8,10 +8,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"glog"
 	"lib/config"
 	"lib/recipes"
 	"lib/ui"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -322,7 +322,7 @@ func (dt *DockerTools) _toolStatus(recipe *recipes.Recipe) string {
 		status = ui.Red(ui.B("unmanaged"))
 
 		if file, err := os.Open("/host" + hostprefix + "/" + recipe.ToolName); err != nil {
-			log.Fatal(err)
+			glog.Fatalf("%s", err)
 
 		} else {
 			defer file.Close()
@@ -339,7 +339,7 @@ func (dt *DockerTools) _toolStatus(recipe *recipes.Recipe) string {
 					}
 				}
 				if err = scanner.Err(); err != nil {
-					log.Fatal(err)
+					glog.Fatalf("%s", err)
 				}
 			}
 		}
@@ -367,7 +367,7 @@ func (dt *DockerTools) _recipeStatus(recipe *recipes.Recipe) string {
 
 	} else {
 		if file, err := os.Open("/host" + hostprefix + "/" + recipe.ToolName); err != nil {
-			log.Fatal(err)
+			glog.Fatalf("%s", err)
 
 		} else {
 			defer file.Close()

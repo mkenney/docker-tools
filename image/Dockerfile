@@ -21,17 +21,18 @@ RUN set -x \
     # for my sanity
     && apk add bash \
 
-    # install a proper less package
+    # the base less package needs to be upgraded to support color output
     && apk add less \
 
-#    # Install golog
-#    && apk add git \
-#    && mkdir -p /go/src/github.com/golang \
-#    && cd /go/src/github.com/golang \
-#    && git clone https://github.com/golang/glog.git \
-#    && apk del git \
+    # install 3rd-party packages
+    && apk add git \
+    && cd /go/src \
+
+    # glog
+    && git clone https://github.com/golang/glog.git \
 
     # cleanup
+    && apk del git \
     && rm -rf /var/cache/apk/*
 
 # Build and install the docker-tools source code

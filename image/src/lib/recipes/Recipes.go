@@ -1,135 +1,123 @@
 package recipes
 
 import (
-    "encoding/csv"
-    "errors"
-    "fmt"
-    "io"
-    "log"
-    "os"
-    "path"
+	"encoding/csv"
+	"fmt"
+	"glog"
+	"io"
+	"os"
+	"path"
 )
 
-/**
- * Represents all tool recipes available to the system
- */
+/*
+Recipes is an array of recipie pointers containing all tool recipes available to
+the system
+*/
 type Recipes [1000]*Recipe
 
-/**
- *
- */
-func NewRecipes() *Recipes {
-    recipes := new(Recipes)
-    return recipes
+/*
+New initializes and returns a pointer to a new instance of Recipies
+*/
+func New() *Recipes {
+	recipes := new(Recipes)
+	return recipes
 }
 
-/**
- * See if a recipe exists in the index
- *
- * @param  {string} recipe_name
- * @param  {string} recipe_source   Either 'registry' or 'recipes'
- * @return {bool}   True if a matching recipe was found, else false
- */
-func (this *Recipes) HasRecipe(recipe_name, recipe_source string) (bool) {
-    ret_val := false
-    for _, recipe := range this {
-        if recipe.RecipeName == recipe_name {
-            if recipe.RecipeSource == recipe_source {
-                ret_val = true
-                break
-            } else if "" == recipe_source {
-                ret_val = true
-                break
-            }
-        }
-    }
-    return ret_val
+/*
+HasRecipe returns whether a specified recipe exists in the index
+*/
+func (rcps *Recipes) HasRecipe(recipeName, recipeSource string) (retval bool) {
+	for _, recipe := range rcps {
+		if recipe.RecipeName == recipeName {
+			if recipe.RecipeSource == recipeSource {
+				retval = true
+				break
+			} else if "" == recipeSource {
+				retval = true
+				break
+			}
+		}
+	}
+	return
 }
 
-/**
- * See if a recipe exists in the index
- *
- * @param  {string} recipe_name
- * @param  {string} recipe_source   Either 'registry' or 'recipes'
- * @return {bool}   True if a matching recipe was found, else false
- */
-func (this *Recipes) SetRecipe(recipe_name, recipe_source string, recipe *Recipe) (*Recipes) {
-    var updated bool
-    var key int
-    var cur_recipe *Recipe
+/*
+SetRecipe will add a recipe to the index or update an existing recipe
+*/
+func (rcps *Recipes) SetRecipe(recipeName, recipeSource string, recipe *Recipe) *Recipes {
+	var updated bool
+	var key int
+	var curRecipe *Recipe
 
-    for key, cur_recipe = range this {
-        if cur_recipe.RecipeName == recipe_name && cur_recipe.RecipeSource == recipe_source {
-            this[key] = recipe
-            updated = true
-            break
-        }
-    }
-    if !updated {
-        fmt.Printf("Last key: %v", key)
-    }
-    return this
+	for key, curRecipe = range rcps {
+		if curRecipe.RecipeName == recipeName && curRecipe.RecipeSource == recipeSource {
+			rcps[key] = recipe
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		fmt.Printf("Last key: %v", key)
+	}
+	return rcps
 }
 
-/**
- * Load all recipes defined in a specified file
- *
- * Recipe files are headerless CSV files with the following structure:
- *
- *     0: RecipeName
- *     1: ToolName
- *     2: ToolPrefix
- *     3: ToolTemplate
- *     4: DockerImage
- *     5: DockerTag
- *     6: ContainerVolumes
- *     7: ContainerEnv
- *     8: ContainerEntrypoint
- *     9: ContainerCmd
- *    10: DockerOptions
- *    11: RecipeNotes
- *
- * @param  {string} recipe_file
- * @return {bool}   true on success, else false
- * @return {error}  error on error, else nil
- */
-func (this *Recipes) Load(recipe_file string) (error) {
-    var ret_err error
+/*
+Load all recipes defined in a specified file
 
-    if _, err := os.Stat(recipe_file); os.IsNotExist(err) {
-        ret_err = err
-        log.Fatalf("File not found '%v'", recipe_file)
+Recipe files are CSV files with the following structure:
 
-    } else {
-        file, err := os.Open(recipe_file)
-        if nil != err {
-            ret_err = errors.New(fmt.Sprintf("Error opening recipe file '%v'", recipe_file))
-            log.Fatalf("Error opening recipe file '%v'", recipe_file)
-        }
-        defer file.Close()
+     0: RecipeName
+     1: ToolName
+     2: ToolPrefix
+     3: ToolTemplate
+     4: DockerImage
+     5: DockerTag
+     6: ContainerVolumes
+     7: ContainerEnv
+     8: ContainerEntrypoint
+     9: ContainerCmd
+    10: DockerOptions
+    11: RecipeNotes
+*/
+func (rcps *Recipes) Load(recipeFile string) (reterr error) {
 
-        reader := csv.NewReader(file)
-        recipe_idx := 0
-        line_idx := 0
-        for {
-            line, err := reader.Read()
-            if io.EOF == err  {
-                break
-            } else if nil != err {
-                ret_err = errors.New(fmt.Sprintf("Error reading recipe file '%v': %v", recipe_file, err))
-                log.Fatalf("Error reading recipe file '%v': %v", recipe_file, err)
-            }
-            if 0 < line_idx { // Skip the header row
-                record := make([]string, 13)
-                for k, v := range line {record[k] = v}
-                record[12] = path.Base(recipe_file) // Append the recipe source
-                recipe := NewRecipe(record)
-                this[recipe_idx] = recipe
-                recipe_idx++
-            }
-            line_idx++
-        }
-    }
+	if _, err := os.Stat(recipeFile); os.IsNotExist(err) {
+		reterr = err
+		glog.Fatalf("File not found '%v'", recipeFile)
 
-    return ret_err
+	} else {
+		file, err := os.Open(recipeFile)
+		if nil != err {
+			reterr = fmt.Errorf("Error opening recipe file '%v'", recipeFile)
+			glog.Fatalf("Error opening recipe file '%v'", recipeFile)
+		}
+		defer file.Close()
+
+		reader := csv.NewReader(file)
+		recipeidx := 0
+		lineidx := 0
+		for {
+			line, err := reader.Read()
+			if io.EOF == err {
+				break
+			} else if nil != err {
+				reterr = fmt.Errorf("Error reading recipe file '%v': %v", recipeFile, err)
+				glog.Fatalf("Error reading recipe file '%v': %v", recipeFile, err)
+			}
+			if 0 < lineidx { // Skip the header row
+				record := make([]string, 13)
+				for k, v := range line {
+					record[k] = v
+				}
+				record[12] = path.Base(recipeFile) // Append the recipe source
+				recipe := NewRecipe(record)
+				rcps[recipeidx] = recipe
+				recipeidx++
+			}
+			lineidx++
+		}
+	}
+
+	return reterr
 }

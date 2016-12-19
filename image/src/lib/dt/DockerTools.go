@@ -2,10 +2,10 @@ package dt
 
 import (
 	"fmt"
+	"glog"
 	"lib/cli"
 	"lib/config"
 	"lib/recipes"
-	"log"
 	"os"
 )
 
@@ -60,7 +60,7 @@ func New() *DockerTools {
 	var err error
 	cli.Commands, command, err = cli.Commands.Shift()
 	if nil != err {
-		log.Fatalf("Error shifting commands")
+		glog.Fatalf("Error shifting commands")
 	}
 	dtools.Commands = cli.Commands
 	dtools.Name = command.Name
@@ -68,13 +68,13 @@ func New() *DockerTools {
 	dtools.Flags = command.Flags
 
 	// Init all recipe files
-	dtools.Recipes = recipes.NewRecipes()
+	dtools.Recipes = recipes.New()
 	erra := dtools.Recipes.Load(config.Config.ConfPath + "/registry")
 	errb := dtools.Recipes.Load(config.Config.ConfPath + "/recipes")
 	if nil != erra {
-		log.Output(1, fmt.Sprintf("Error loading recipes from file '%v'", erra))
+		glog.Warningf("Error loading recipes from file '%v'", erra)
 	} else if nil != errb {
-		log.Output(1, fmt.Sprintf("Error loading recipes from file '%v'", errb))
+		glog.Warningf("Error loading recipes from file '%v'", errb)
 	}
 
 	return dtools
