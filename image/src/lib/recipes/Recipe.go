@@ -2,7 +2,6 @@ package recipes
 
 import (
     "lib/config"
-    "flag" // Used by glog
 )
 
 /**
@@ -32,8 +31,6 @@ type Recipe struct {
  * @return {*Recipe}
  */
 func NewRecipe(recipe_data []string) (*Recipe) {
-    flag.Parse() // required by glog
-
     recipe := new(Recipe)
 
     // Recipe name

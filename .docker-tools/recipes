@@ -4,6 +4,7 @@ And now, I've gone and put a new line. And now, I'm going to put a blank line!
 
 There it went! Hope it worked."
 minimum-recipe,dt-test-recipe-minimum,,tool,mkenney/npm,,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:noexec""]",,,,,The minimum amount of data required for a recipe
+maximum-recipe,dt-test-recipe-maximum,/every/field/filled,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:noexec""]","[""TERM=xterm"",""FOO=bar""]",/entrypoint.sh,/post-entrypoint pre-commands,--some-option=value,Every recipe field filled
 not-installed,dt-test-not-installed,$HOME/bin,tool,mkenney/npm,latest,,,,,,
 unmanaged,dt-test-installed-unmanaged,$HOME/bin,tool,mkenney/npm,latest,,,,,,
 outdated,dt-test-installed-outdated,$HOME/bin,tool,mkenney/npm,latest,,,,,,

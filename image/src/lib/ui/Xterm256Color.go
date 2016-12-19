@@ -28,180 +28,216 @@ const (
     grey          = "\033[48;5;;38;5;8m"
     brown         = "\033[48;5;;38;5;94m"
     white         = "\033[48;5;;38;5;7m"
-    white_lt      = "\033[48;5;;38;5;247m"
-    white_bt      = "\033[48;5;;38;5;255m"
-    white_dk      = "\033[48;5;;38;5;8m"
+    whitelt       = "\033[48;5;;38;5;247m"
+    whitebt       = "\033[48;5;;38;5;255m"
+    whitedk       = "\033[48;5;;38;5;8m"
     indigo        = "\033[48;5;;38;5;21m"
-    indigo_lt     = "\033[48;5;;38;5;27m"
-    indigo_bt     = "\033[48;5;;38;5;4m"
-    indigo_dk     = "\033[48;5;;38;5;18m"
+    indigolt      = "\033[48;5;;38;5;27m"
+    indigobt      = "\033[48;5;;38;5;4m"
+    indigodk      = "\033[48;5;;38;5;18m"
     green         = "\033[48;5;;38;5;40m"
-    green_lt      = "\033[48;5;;38;5;42m"
-    green_bt      = "\033[48;5;;38;5;46m"
-    green_dk      = "\033[48;5;;38;5;22m"
+    greenlt       = "\033[48;5;;38;5;42m"
+    greenbt       = "\033[48;5;;38;5;46m"
+    greendk       = "\033[48;5;;38;5;22m"
     red           = "\033[48;5;;38;5;88m"
-    red_lt        = "\033[48;5;;38;5;124m"
-    red_bt        = "\033[48;5;;38;5;196m"
-    red_dk        = "\033[48;5;;38;5;52m"
+    redlt         = "\033[48;5;;38;5;124m"
+    redbt         = "\033[48;5;;38;5;196m"
+    reddk         = "\033[48;5;;38;5;52m"
     orange        = "\033[48;5;;38;5;172m"
-    orange_lt     = "\033[48;5;;38;5;178m"
-    orange_bt     = "\033[48;5;;38;5;184m"
-    orange_dk     = "\033[48;5;;38;5;166m"
+    orangelt      = "\033[48;5;;38;5;178m"
+    orangebt      = "\033[48;5;;38;5;184m"
+    orangedk      = "\033[48;5;;38;5;166m"
     yellow        = "\033[48;5;;38;5;154m"
-    yellow_lt     = "\033[48;5;;38;5;156m"
-    yellow_bt     = "\033[48;5;;38;5;226m"
-    yellow_dk     = "\033[48;5;;38;5;142m"
+    yellowlt      = "\033[48;5;;38;5;156m"
+    yellowbt      = "\033[48;5;;38;5;226m"
+    yellowdk      = "\033[48;5;;38;5;142m"
     violet        = "\033[48;5;;38;5;165m"
-    violet_lt     = "\033[48;5;;38;5;177m"
-    violet_bt     = "\033[48;5;;38;5;201m"
-    violet_dk     = "\033[48;5;;38;5;93m"
+    violetlt      = "\033[48;5;;38;5;177m"
+    violetbt      = "\033[48;5;;38;5;201m"
+    violetdk      = "\033[48;5;;38;5;93m"
     blue          = "\033[48;5;;38;5;75m"
-    blue_lt       = "\033[48;5;;38;5;45m"
-    blue_bt       = "\033[48;5;;38;5;14m"
-    blue_dk       = "\033[48;5;;38;5;33m"
+    bluelt        = "\033[48;5;;38;5;45m"
+    bluebt        = "\033[48;5;;38;5;14m"
+    bluedk        = "\033[48;5;;38;5;33m"
 )
 
+/*Reset color code*/
 func Reset(content string) (string) {
     return reset+content
 }
-
-/**
- * @param int     foreground  0 - 255
- * @param int     background  0 - 255
- * @param string  content     The content to style
- * @return string
- */
+/*Custom allows you to define any color*/
 func Custom (foreground, background int, content string) (string) {
     return "\033[48;5;" + strconv.Itoa(background) + ";38;5;" + strconv.Itoa(foreground) + "m" + content + reset
 }
-
+/*Bl - blink*/
 func Bl(content string) (string) {
     return blink+content+reset
 }
+/*B - bold*/
 func B(content string) (string) {
     return bold+content+reset
 }
+/*U - underline*/
 func U(content string) (string) {
     return underline+content+reset
 }
+/*I - italic*/
 func I(content string) (string) {
     return italic+content+reset
 }
+/*Black color code*/
 func Black(content string) (string) {
     return black+content+reset
 }
+/*Gray color code*/
 func Gray(content string) (string) {
     return grey+content+reset
 }
+/*Grey color code*/
 func Grey(content string) (string) {
     return grey+content+reset
 }
+/*Brown color code*/
 func Brown(content string) (string) {
     return brown+content+reset
 }
+/*White color code*/
 func White(content string) (string) {
     return white+content+reset
 }
+/*WhiteLt - light white color code*/
 func WhiteLt(content string) (string) {
-    return white_lt+content+reset
+    return whitelt+content+reset
 }
+/*WhiteBt - bright white color code*/
 func WhiteBt(content string) (string) {
-    return white_bt+content+reset
+    return whitebt+content+reset
 }
+/*WhiteDk - dark white color code*/
 func WhiteDk(content string) (string) {
-    return white_dk+content+reset
+    return whitedk+content+reset
 }
+/*Indigo color code*/
 func Indigo(content string) (string) {
     return indigo+content+reset
 }
+/*IndigoLt - light indigo color code*/
 func IndigoLt(content string) (string) {
-    return indigo_lt+content+reset
+    return indigolt+content+reset
 }
+/*IndigoBt - bright indigo color code*/
 func IndigoBt(content string) (string) {
-    return indigo_bt+content+reset
+    return indigobt+content+reset
 }
+/*IndigoDk - dark indigo color code*/
 func IndigoDk(content string) (string) {
-    return indigo_dk+content+reset
+    return indigodk+content+reset
 }
+/*Green color code*/
 func Green(content string) (string) {
     return green+content+reset
 }
+/*GreenLt - light green color code*/
 func GreenLt(content string) (string) {
-    return green_lt+content+reset
+    return greenlt+content+reset
 }
+/*GreenBt - bright green color code*/
 func GreenBt(content string) (string) {
-    return green_bt+content+reset
+    return greenbt+content+reset
 }
+/*GreenDk - dark green color code*/
 func GreenDk(content string) (string) {
-    return green_dk+content+reset
+    return greendk+content+reset
 }
+/*Red color code*/
 func Red(content string) (string) {
     return red+content+reset
 }
+/*RedLt - light red color code*/
 func RedLt(content string) (string) {
-    return red_lt+content+reset
+    return redlt+content+reset
 }
+/*RedBt - bright red color code*/
 func RedBt(content string) (string) {
-    return red_bt+content+reset
+    return redbt+content+reset
 }
+/*RedDk - dark red color code*/
 func RedDk(content string) (string) {
-    return red_dk+content+reset
+    return reddk+content+reset
 }
+/*Orange color code*/
 func Orange(content string) (string) {
     return orange+content+reset
 }
+/*OrangeLt - light orange color code*/
 func OrangeLt(content string) (string) {
-    return orange_lt+content+reset
+    return orangelt+content+reset
 }
+/*OrangeBt - bright orange color code*/
 func OrangeBt(content string) (string) {
-    return orange_bt+content+reset
+    return orangebt+content+reset
 }
+/*OrangeDk - dark orange color code*/
 func OrangeDk(content string) (string) {
-    return orange_dk+content+reset
+    return orangedk+content+reset
 }
+/*Yellow color code*/
 func Yellow(content string) (string) {
     return yellow+content+reset
 }
+/*YellowLt - light yellow color code*/
 func YellowLt(content string) (string) {
-    return yellow_lt+content+reset
+    return yellowlt+content+reset
 }
+/*YellowBt - bright yellow color code*/
 func YellowBt(content string) (string) {
-    return yellow_bt+content+reset
+    return yellowbt+content+reset
 }
+/*YellowDk - dark yellow color code*/
 func YellowDk(content string) (string) {
-    return yellow_dk+content+reset
+    return yellowdk+content+reset
 }
+/*Violet color code*/
 func Violet(content string) (string) {
     return violet+content+reset
 }
+/*VioletLt - light violet color code*/
 func VioletLt(content string) (string) {
-    return violet_lt+content+reset
+    return violetlt+content+reset
 }
+/*VioletBt - bright violet color code*/
 func VioletBt(content string) (string) {
-    return violet_bt+content+reset
+    return violetbt+content+reset
 }
+/*VioletDk - dark violet color code*/
 func VioletDk(content string) (string) {
-    return violet_dk+content+reset
+    return violetdk+content+reset
 }
+/*Blue color code*/
 func Blue(content string) (string) {
     return blue+content+reset
 }
+/*BlueLt - light blue color code*/
 func BlueLt(content string) (string) {
-    return blue_lt+content+reset
+    return bluelt+content+reset
 }
+/*BlueBt - bright blue color code*/
 func BlueBt(content string) (string) {
-    return blue_bt+content+reset
+    return bluebt+content+reset
 }
+/*BlueDk - dark blue color code*/
 func BlueDk(content string) (string) {
-    return blue_dk+content+reset
+    return bluedk+content+reset
 }
 
-/**
- * Run through all colored output to see what a terminal supports
- */
+/*
+Test outputs all possible colors (256 total) and helper function usage
+*/
 func Test() {
     for a := 0; a < 256; a++ {
        fmt.Printf(Custom(a, 0, "Custom(%d, 0, \"The quick brown fox jumped over the lazy dog.\")\n"), a)
+    }
+    for a := 0; a < 256; a++ {
        fmt.Printf(Custom(0, a, "Custom(0, %d, \"The quick brown fox jumped over the lazy dog.\")\n"), a)
     }
        fmt.Printf(Black("   Black(The quick brown fox jumped over the lazy dog\n"))

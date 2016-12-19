@@ -21,32 +21,32 @@ RUN set -x \
     # for my sanity
     && apk add bash \
 
-    # Install golog
-    && apk add git \
-    && mkdir -p /go/src/github.com/golang \
-    && cd /go/src/github.com/golang \
-    && git clone https://github.com/golang/glog.git \
-    && apk del git \
-
     # install a proper less package
     && apk add less \
 
+#    # Install golog
+#    && apk add git \
+#    && mkdir -p /go/src/github.com/golang \
+#    && cd /go/src/github.com/golang \
+#    && git clone https://github.com/golang/glog.git \
+#    && apk del git \
+
+    # cleanup
     && rm -rf /var/cache/apk/*
 
-# add sources
-COPY src /go/src/docker-tools
-COPY lib /go/src/lib
-
 # Build and install the docker-tools source code
+COPY ./ /go/src/docker-tools
 RUN set -x \
+    # Add the tool sources to gopath
+    && export GOPATH=$GOPATH:/go/src/docker-tools \
+    # Cleanup and build
     && cd /go/src/docker-tools \
+    && rm Dockerfile \
     && go build \
-    && cp ./docker-tools /go/bin \
-    && chmod 0755 /go/bin/docker-tools
+    && ln -s /go/src/docker-tools/docker-tools /go/bin/docker-tools
 
 ##############################################################################
 # ~ fin ~
 ##############################################################################
-
 
 ENTRYPOINT ["/go/bin/docker-tools"]
