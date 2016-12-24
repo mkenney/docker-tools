@@ -37,7 +37,7 @@ type DockerTools struct {
 	/*
 		A key/value map of command-line options passed to docker-tools
 	*/
-	Opts map[string]string
+	Opts map[string][]string
 
 	/*
 		A list of command-line flags passed to docker-tools
@@ -167,19 +167,30 @@ func (dt *DockerTools) Generate() {
 		//recipe.SetCliEnv(recipeData[7])
 	}
 
-	if opts.HasOpt("name")       {recipe.ToolName = opts.Opts["name"]}
-	if opts.HasOpt("prefix")     {recipe.Prefix = opts.Opts["prefix"]}
-	if opts.HasOpt("template")   {recipe.Template = opts.Opts["template"]}
-	if opts.HasOpt("image")      {recipe.Image = opts.Opts["image"]}
-	if opts.HasOpt("tag")        {recipe.Tag = opts.Opts["tag"]}
-	if opts.HasOpt("volumes")    {recipe.SetVolumes(opts.Opts["volumes"])}
-	if opts.HasOpt("env")        {recipe.SetEnv(opts.Opts["env"])}
-	if opts.HasOpt("entrypoint") {recipe.Entrypoint = opts.Opts["entrypoint"]}
-	if opts.HasOpt("cmd")        {recipe.Cmd = opts.Opts["cmd"]}
-	//if opts.HasOpt("options")    {recipe.SetOptions(opts.Opts["options"])}
+	if opts.HasOpt("name")       {recipe.ToolName = opts.Opts["name"][0]}
+	if opts.HasOpt("prefix")     {recipe.Prefix = opts.Opts["prefix"][0]}
+	if opts.HasOpt("template")   {recipe.Template = opts.Opts["template"][0]}
+	if opts.HasOpt("image")      {recipe.Image = opts.Opts["image"][0]}
+	if opts.HasOpt("tag")        {recipe.Tag = opts.Opts["tag"][0]}
+	if opts.HasOpt("volumes")    {
+		for _, vol := range opts.Opts["volumes"] {
+			recipe.AddVolume(vol)
+		}
+	}
+	if opts.HasOpt("env")        {
+		for _, env := range opts.Opts["env"] {
+			recipe.AddEnv(env)
+		}
+	}
+	if opts.HasOpt("entrypoint") {recipe.Entrypoint = opts.Opts["entrypoint"][0]}
+	if opts.HasOpt("cmd")        {recipe.Cmd = opts.Opts["cmd"][0]}
+	if opts.HasOpt("options")    {
+		for _, opt := range opts.Opts["options"] {
+			recipe.AddOption(opt)
+		}
+	}
 
-
-	fmt.Printf("Recipe: %s", recipe.ToString())
+	fmt.Printf("%s", recipe.ToString())
 }
 
 /*

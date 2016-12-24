@@ -10,6 +10,11 @@ import (
 )
 
 /*
+DockerToolsVersion is the curremt semantic version
+*/
+const DockerToolsVersion = "0.0.0"
+
+/*
 DefaultConfigDir is the default configuration directory inside the container
 */
 const DefaultConfigDir = "/usr/local/docker-tools"
@@ -21,6 +26,11 @@ system
 const DefaultPrefixDir = "/usr/local/bin"
 
 /*
+DefaultTemplateDir is the default template file location
+*/
+const DefaultTemplateDir = "/go/src/docker-tools/src/lib/templates"
+
+/*
 ValueData is a struct that represents all tool recipes available to the system
 */
 type ValueData struct {
@@ -29,7 +39,6 @@ type ValueData struct {
 	HostHome      string
 	ConfPath      string
 	DefaultPrefix string
-	ToolsVersion  string
 }
 
 /*
@@ -46,7 +55,6 @@ func New() *ValueData {
 	config.HostHome = map[bool]string{true: os.Getenv("HOME"), false: ""}["" != os.Getenv("HOME")]
 	config.HostConfPath = map[bool]string{true: os.Getenv("DOCKER_TOOLS_CONFIG_DIR"), false: DefaultConfigDir}["" != os.Getenv("DOCKER_TOOLS_CONFIG_DIR")]
 	config.DefaultPrefix = map[bool]string{true: os.Getenv("DOCKER_TOOLS_PREFIX_DIR"), false: DefaultPrefixDir}["" != os.Getenv("DOCKER_TOOLS_PREFIX_DIR")]
-	config.ToolsVersion = "v0.0.1"
 
 	return config
 }

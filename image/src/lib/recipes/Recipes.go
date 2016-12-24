@@ -8,6 +8,7 @@ collection and provides methods for managing the collection
 package recipes
 
 import (
+	"flag"
 	"io/ioutil"
 	"lib/config"
 	"os"
@@ -151,4 +152,8 @@ func (rcps Recipes) SetRecipe(recipe *Recipe) *Recipes {
 	}
 
 	return &rcps
+}
+
+func init() {
+	flag.Parse() // Required for glog
 }

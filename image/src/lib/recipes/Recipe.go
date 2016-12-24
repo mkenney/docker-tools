@@ -10,8 +10,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"lib/config"
+	"lib/templates/tool"
+	"lib/templates/service"
 	"lib/ui"
 	"os"
 	"regexp"
@@ -90,44 +93,6 @@ func NewRecipe(recipeData []string) (recipe *Recipe) {
 }
 
 /*
-Render states:
- 1. recipe installed
-     1. up to date
-     2. out of date
- 2. recipe not installed
-     1. no tool installed
-     2. docker-tools tool installed - recipe name
-     3. unmanaged tool installed (any other file)
-*/
-func (recipe *Recipe) Render() string {
-
-	template, err := template.New("recipe").Parse(`
- {{.Source}} {{.RecipeName}}
-{{.Notes}}
-   Details
-     ├─ status ` + ui.Grey("──────") + ` {{.RecipeStatus}}
-     ├─ type ` + ui.Grey("────────") + ` {{.Template}}
-     ├─ tool ` + ui.Grey("────────") + ` {{.Prefix}}/{{.ToolName}}
-     ├─ image ` + ui.Grey("───────") + ` {{.Image}}:{{.Tag}}
-     ├─ cmd ` + ui.Grey("─────────") + ` {{.Cmd}}
-     ├─ entrypoint ` + ui.Grey("──") + ` {{.Entrypoint}}
-     ├─ env {{.Env}}
-     └─ volumes {{.Volumes}}
-`)
-	if nil != err {
-		glog.Fatalf("Could not parse Recipe template: %s", err)
-	}
-
-	var retBuffer bytes.Buffer
-	err = template.Execute(&retBuffer, recipe.renderVars())
-	if nil != err {
-		glog.Fatalf("Could not execute Recipe template: %s", err)
-	}
-
-	return retBuffer.String()
-}
-
-/*
 AddEnv accepts a key=value pair
 */
 func (recipe *Recipe) AddEnv(env string) (reterr error) {
@@ -193,16 +158,57 @@ func (recipe *Recipe) AddVolume(volume string) (reterr error) {
 }
 
 /*
-ToString returns a string representation of the recipe (a `docker run` command)
+Render states:
+ 1. recipe installed
+     1. up to date
+     2. out of date
+ 2. recipe not installed
+     1. no tool installed
+     2. docker-tools tool installed - recipe name
+     3. unmanaged tool installed (any other file)
 */
-func (recipe *Recipe) ToString() string {
-	template, err := template.New("ToString").Parse(`docker run --rm -it {{.Options}} {{.Volumes}} {{.Env}} {{.Entrypoint}} {{.Cmd}} {{.Image}}:{{.Tag}}`)
+func (recipe *Recipe) Render() string {
+
+	template, err := template.New("recipe").Parse(`
+ {{.Source}} {{.RecipeName}}
+{{.Notes}}
+   Details
+     ├─ status ` + ui.Grey("──────") + ` {{.RecipeStatus}}
+     ├─ type ` + ui.Grey("────────") + ` {{.Template}}
+     ├─ tool ` + ui.Grey("────────") + ` {{.Prefix}}/{{.ToolName}}
+     ├─ image ` + ui.Grey("───────") + ` {{.Image}}:{{.Tag}}
+     ├─ cmd ` + ui.Grey("─────────") + ` {{.Cmd}}
+     ├─ entrypoint ` + ui.Grey("──") + ` {{.Entrypoint}}
+     ├─ env {{.Env}}
+     └─ volumes {{.Volumes}}
+`)
 	if nil != err {
-		glog.Fatalf("Could not parse Recipe string template: %s", err)
+		glog.Fatalf("Could not parse Recipe template: %s", err)
 	}
 
 	var retBuffer bytes.Buffer
-	err = template.Execute(&retBuffer, recipe.toStringVars())
+	err = template.Execute(&retBuffer, recipe.renderVars())
+	if nil != err {
+		glog.Fatalf("Could not execute Recipe template: %s", err)
+	}
+
+	return retBuffer.String()
+}
+
+/*
+ToString returns a string representation of the recipe (a `docker run` command)
+*/
+func (recipe *Recipe) ToString() string {
+	var template *template.Template
+
+	if "tool" == recipe.Template {
+		template = tool.Template
+	} else if "service" == recipe.Template {
+		template = service.Template
+	}
+
+	var retBuffer bytes.Buffer
+	err := template.Execute(&retBuffer, recipe.toStringVars())
 	if nil != err {
 		glog.Fatalf("Could not execute Recipe string template: %s", err)
 	}
@@ -240,13 +246,27 @@ renderVars
 func (recipe *Recipe) toStringVars() (retval map[string]string) {
 	retval = make(map[string]string)
 
-	retval["Image"] = recipe.stringImage()
-	retval["Tag"] = recipe.stringTag()
-	retval["Cmd"] = recipe.stringCmd()
-	retval["Entrypoint"] = recipe.stringEntrypoint()
-	retval["Volumes"] = recipe.stringVolumes()
-	retval["Env"] = recipe.stringEnv()
-	//retval["Options"] = recipe.stringOptions()
+	retval["DockerToolsVersion"] = escapeBashVar(config.DockerToolsVersion)
+	retval["RecipeName"] = escapeBashVar(recipe.RecipeName)
+	retval["ToolName"] = escapeBashVar(recipe.ToolName)
+	retval["Prefix"] = escapeBashVar(recipe.Template)
+	retval["Template"] = escapeBashVar(recipe.Template)
+	retval["Image"] = escapeBashVar(recipe.Image)
+	retval["Tag"] = escapeBashVar(recipe.Tag)
+	retval["Volumes"] = escapeBashVar("-v "+strings.Join(recipe.Volumes, " -v "))
+	retval["Env"] = escapeBashVar("-e "+strings.Join(recipe.Env, " -e "))
+	retval["Entrypoint"] = escapeBashVar(recipe.Entrypoint)
+	retval["Cmd"] = escapeBashVar(recipe.Cmd)
+	retval["Options"] = escapeBashVar(strings.Join(recipe.Options, " "))
+	retval["Notes"] = escapeBashVar(recipe.Notes)
+	retval["Source"] = escapeBashVar(recipe.Source)
+
+	return
+}
+
+func escapeBashVar(str string) (retval string) {
+	retval = str
+	retval = strings.Replace(retval, "\"", "\\\"", -1)
 	return
 }
 
@@ -489,7 +509,7 @@ func (recipe *Recipe) _toolStatus() string {
 					if strings.Contains(scanner.Text(), "__TOOLS_VERSION__") {
 						if strings.Contains(scanner.Text(), "__RECIPE_NAME__="+recipe.RecipeName) {
 							status = ui.OrangeBt(ui.B("outdated"))
-							if strings.Contains(scanner.Text(), "__TOOLS_VERSION__="+config.Values.ToolsVersion) {
+							if strings.Contains(scanner.Text(), "__TOOLS_VERSION__="+config.DockerToolsVersion) {
 								status = ui.GreenBt(ui.B("installed"))
 							}
 						}
@@ -554,7 +574,7 @@ func (recipe *Recipe) renderStatus() string {
 							isrecipe = true
 						}
 					}
-					if strings.Contains(string(line), "__TOOLS_VERSION__="+config.Values.ToolsVersion) {
+					if strings.Contains(string(line), "__TOOLS_VERSION__="+config.DockerToolsVersion) {
 						isupdated = true
 					}
 				}
@@ -575,4 +595,8 @@ func (recipe *Recipe) renderStatus() string {
 	}
 
 	return status
+}
+
+func init() {
+	flag.Parse() // Required for glog
 }
