@@ -1,0 +1,120 @@
+- recipename: long-description
+  toolname: yarn
+  prefix: /usr/local/bin
+  template: tool
+  image: mkenney/npm
+  tag: 7.0-alpine
+  volumes:
+  - $(pwd):/src:rw
+  - $HOME/.ssh:/home/dev/.ssh:ro,noexec,nosuid
+  env:
+  - TERM=xterm
+  - FOO=bar
+  entrypoint: ""
+  cmd: /run-as-user /usr/local/bin/yarn
+  options:
+  - TERM=xterm
+  - FOO=bar
+  notes: |-
+    A yarn command that writes files as the current user running on Node 7.0. And a long note. Like really long. Really really long. So long I don't know what else to say. I mean, how much can you say about a long note. It's just a bunch of stupid text.
+    And now, I've gone and put a new line. And now, I'm going to put a blank line!
+
+    There it went! Hope it worked.
+  source: recipes.csv
+- recipename: minimum-recipe
+  toolname: dt-test-recipe-minimum
+  prefix: /usr/local/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: The minimum amount of data required for a recipe
+  source: recipes.csv
+- recipename: maximum-recipe
+  toolname: dt-test-recipe-maximum
+  prefix: /every/field/filled
+  template: tool
+  image: mkenney/npm
+  tag: 7.0-alpine
+  volumes:
+  - $(pwd):/src:rw
+  - $HOME/.ssh:/home/dev/.ssh:noexec
+  env:
+  - TERM=xterm
+  - FOO=bar
+  entrypoint: /entrypoint.sh
+  cmd: /post-entrypoint pre-commands
+  options:
+  - TERM=xterm
+  - FOO=bar
+  notes: Every recipe field filled
+  source: recipes.csv
+- recipename: not-installed
+  toolname: dt-test-not-installed
+  prefix: $HOME/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: ""
+  source: recipes.csv
+- recipename: unmanaged
+  toolname: dt-test-installed-unmanaged
+  prefix: $HOME/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: ""
+  source: recipes.csv
+- recipename: outdated
+  toolname: dt-test-installed-outdated
+  prefix: $HOME/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: ""
+  source: recipes.csv
+- recipename: up-to-date
+  toolname: dt-test-installed-up-to-date
+  prefix: $HOME/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: ""
+  source: recipes.csv
+- recipename: other-recipe
+  toolname: dt-test-installed-other-recipe
+  prefix: $HOME/bin
+  template: tool
+  image: mkenney/npm
+  tag: latest
+  volumes: []
+  env: []
+  entrypoint: ""
+  cmd: ""
+  options: []
+  notes: ""
+  source: recipes.csv

@@ -1,35 +1,60 @@
+/*
+Package recipes defines data structures and methods for managing the tool recipe
+database.
+
+This portion of the recipe package defines the structure of the recipe
+collection and provides methods for managing the collection
+*/
 package recipes
 
 import (
-	"encoding/csv"
-	"fmt"
-	"glog"
-	"io"
+	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/golang/glog"
+	"gopkg.in/yaml.v2"
 )
 
 /*
 Recipes is an array of recipie pointers containing all tool recipes available to
 the system
 */
-type Recipes [1000]*Recipe
+type Recipes []*Recipe
 
 /*
 New initializes and returns a pointer to a new instance of Recipies
 */
 func New() *Recipes {
-	recipes := new(Recipes)
-	return recipes
+	recipes := make(Recipes, 0)
+	return &recipes
+}
+
+/*
+GetRecipe returns a specified recipe
+*/
+func (rcps Recipes) GetRecipe(recipeName, recipeSource string) (retval *Recipe) {
+	for _, recipe := range rcps {
+		if recipe.RecipeName == recipeName {
+			if recipe.Source == recipeSource {
+				retval = recipe
+				break
+			} else if "" == recipeSource {
+				retval = recipe
+				break
+			}
+		}
+	}
+	return
 }
 
 /*
 HasRecipe returns whether a specified recipe exists in the index
 */
-func (rcps *Recipes) HasRecipe(recipeName, recipeSource string) (retval bool) {
+func (rcps Recipes) HasRecipe(recipeName, recipeSource string) (retval bool) {
 	for _, recipe := range rcps {
 		if recipe.RecipeName == recipeName {
-			if recipe.RecipeSource == recipeSource {
+			if recipe.Source == recipeSource {
 				retval = true
 				break
 			} else if "" == recipeSource {
@@ -44,22 +69,20 @@ func (rcps *Recipes) HasRecipe(recipeName, recipeSource string) (retval bool) {
 /*
 SetRecipe will add a recipe to the index or update an existing recipe
 */
-func (rcps *Recipes) SetRecipe(recipeName, recipeSource string, recipe *Recipe) *Recipes {
+func (rcps Recipes) SetRecipe(recipe *Recipe) *Recipes {
 	var updated bool
-	var key int
-	var curRecipe *Recipe
 
-	for key, curRecipe = range rcps {
-		if curRecipe.RecipeName == recipeName && curRecipe.RecipeSource == recipeSource {
+	for key, curRecipe := range rcps {
+		if curRecipe.RecipeName == recipe.RecipeName && curRecipe.Source == recipe.Source {
 			rcps[key] = recipe
 			updated = true
-			break
 		}
 	}
 	if !updated {
-		fmt.Printf("Last key: %v", key)
+		rcps = append(rcps, recipe)
 	}
-	return rcps
+
+	return &rcps
 }
 
 /*
@@ -80,44 +103,28 @@ Recipe files are CSV files with the following structure:
     10: DockerOptions
     11: RecipeNotes
 */
-func (rcps *Recipes) Load(recipeFile string) (reterr error) {
+func (rcps *Recipes) Load(recipeFile string) *Recipes {
 
 	if _, err := os.Stat(recipeFile); os.IsNotExist(err) {
-		reterr = err
-		glog.Fatalf("File not found '%v'", recipeFile)
+		glog.Fatalf("File not found '%s': %s", recipeFile, err)
 
 	} else {
-		file, err := os.Open(recipeFile)
-		if nil != err {
-			reterr = fmt.Errorf("Error opening recipe file '%v'", recipeFile)
-			glog.Fatalf("Error opening recipe file '%v'", recipeFile)
-		}
-		defer file.Close()
 
-		reader := csv.NewReader(file)
-		recipeidx := 0
-		lineidx := 0
-		for {
-			line, err := reader.Read()
-			if io.EOF == err {
-				break
-			} else if nil != err {
-				reterr = fmt.Errorf("Error reading recipe file '%v': %v", recipeFile, err)
-				glog.Fatalf("Error reading recipe file '%v': %v", recipeFile, err)
-			}
-			if 0 < lineidx { // Skip the header row
-				record := make([]string, 13)
-				for k, v := range line {
-					record[k] = v
-				}
-				record[12] = path.Base(recipeFile) // Append the recipe source
-				recipe := NewRecipe(record)
-				rcps[recipeidx] = recipe
-				recipeidx++
-			}
-			lineidx++
+		// Load the file intoa byte array and unmarshal a Yaml representation
+		fileBytes, err := ioutil.ReadFile(recipeFile)
+		if nil != err {
+			glog.Fatalf("Error reading recipe file '%v'", recipeFile)
+		}
+
+
+		// Merge the loaded recipies into the global object
+		var fileRecipes Recipes
+		yaml.Unmarshal(fileBytes, &fileRecipes)
+		for _, tmpRecipe := range fileRecipes {
+			tmpRecipe.Source = path.Base(recipeFile)
+			rcps = rcps.SetRecipe(tmpRecipe)
 		}
 	}
 
-	return reterr
+	return rcps
 }

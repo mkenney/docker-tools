@@ -1,0 +1,12 @@
+RecipeName,ToolName,ToolPrefix,ToolTemplate,DockerImage,DockerTag,ContainerVolumes,ContainerEnv,ContainerEntrypoint,ContainerCmd,DockerOptions,RecipeNotes
+long-description,yarn,,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:ro,noexec,nosuid""]","[""TERM=xterm"",""FOO=bar""]",,/run-as-user /usr/local/bin/yarn,,"A yarn command that writes files as the current user running on Node 7.0. And a long note. Like really long. Really really long. So long I don't know what else to say. I mean, how much can you say about a long note. It's just a bunch of stupid text.
+And now, I've gone and put a new line. And now, I'm going to put a blank line!
+
+There it went! Hope it worked."
+minimum-recipe,dt-test-recipe-minimum,,tool,mkenney/npm,,,,,,,The minimum amount of data required for a recipe
+maximum-recipe,dt-test-recipe-maximum,/every/field/filled,tool,mkenney/npm,7.0-alpine,"[""$(pwd):/src:rw"",""$HOME/.ssh:/home/dev/.ssh:noexec""]","[""TERM=xterm"",""FOO=bar""]",/entrypoint.sh,/post-entrypoint pre-commands,--some-option=value,Every recipe field filled
+not-installed,dt-test-not-installed,$HOME/bin,tool,mkenney/npm,latest,,,,,,
+unmanaged,dt-test-installed-unmanaged,$HOME/bin,tool,mkenney/npm,latest,,,,,,
+outdated,dt-test-installed-outdated,$HOME/bin,tool,mkenney/npm,latest,,,,,,
+up-to-date,dt-test-installed-up-to-date,$HOME/bin,tool,mkenney/npm,latest,,,,,,
+other-recipe,dt-test-installed-other-recipe,$HOME/bin,tool,mkenney/npm,latest,,,,,,

@@ -1,4 +1,7 @@
-
+/*
+Package ui provides a very simple set of functions that return Xterm-256color
+compatible escape codes for terminal styling
+*/
 package ui
 
 import (

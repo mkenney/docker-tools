@@ -37,7 +37,7 @@ function __install_usage {
     --volumes           Specify any volumes that should be mounted. This is a
                         semicolon delimited list of \`docker run\` volume
                         mount strings
-        "
+"
 }
 
 function __install_help {

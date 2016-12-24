@@ -1,5 +1,5 @@
 /*
-Package config package provides a struct and methds for interacting with the
+Package config provides a struct and methds for interacting with the
 docker-tools configuration file
 */
 package config
