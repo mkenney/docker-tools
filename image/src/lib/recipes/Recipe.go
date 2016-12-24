@@ -128,6 +128,71 @@ func (recipe *Recipe) Render() string {
 }
 
 /*
+AddEnv accepts a key=value pair
+*/
+func (recipe *Recipe) AddEnv(env string) (reterr error) {
+	envParts := strings.Split(env, "=")
+	if 2 != len(envParts) {
+		reterr = fmt.Errorf("Invalid environment variable definition '%s', both `key` and `value` are required", env)
+	}
+	if nil == reterr {
+		for _, curEnv := range recipe.Env {
+			if curEnv == env {
+				reterr = fmt.Errorf("Environment variable already exists in this recipe '%s'", curEnv)
+				break
+			}
+		}
+	}
+	if nil == reterr {
+		recipe.Env = append(recipe.Env, env)
+	}
+	return
+}
+
+/*
+AddOption accepts a key or a key=value pair
+*/
+func (recipe *Recipe) AddOption(option string) (reterr error) {
+	if "" == option {
+		reterr = fmt.Errorf("Invalid option definition '%s', a valid `docker run` CLI option is required", option)
+	}
+	if nil == reterr {
+		for _, curOpt := range recipe.Options {
+			if curOpt == option {
+				reterr = fmt.Errorf("Option variable already exists in this recipe '%s'", curOpt)
+				break
+			}
+		}
+	}
+	if nil == reterr {
+		recipe.Options = append(recipe.Options, option)
+	}
+	return
+}
+
+/*
+AddVolume accepts a volume mount string
+*/
+func (recipe *Recipe) AddVolume(volume string) (reterr error) {
+	volParts := strings.Split(volume, ":")
+	if 2 > len(volParts) {
+		reterr = fmt.Errorf("Invalid volume definition '%s', both `src` and `dest` are required", volume)
+	}
+	if nil == reterr {
+		for _, vol := range recipe.Volumes {
+			if vol == volume {
+				reterr = fmt.Errorf("Volume already exists in this recipe '%s'", vol)
+				break
+			}
+		}
+	}
+	if nil == reterr {
+		recipe.Volumes = append(recipe.Volumes, volume)
+	}
+	return
+}
+
+/*
 ToString returns a string representation of the recipe (a `docker run` command)
 */
 func (recipe *Recipe) ToString() string {

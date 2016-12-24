@@ -41,19 +41,18 @@ type Command struct {
 	   argument that begins with "--". An option without a value or an empty
 	   value defaults to an empty string.
 	*/
-	Opts map[string]string
+	Opts map[string][]string
 }
 
 /*
 GetOpt returns an option value
 If no value was set or the option ended in '=', an emtpy string is returned
 */
-func (cmd Command) GetOpt(opt string) string {
-	var retval string
+func (cmd Command) GetOpt(opt string) (retval []string) {
 	if val, ok := cmd.Opts[opt]; ok {
 		retval = val
 	}
-	return retval
+	return
 }
 
 /*

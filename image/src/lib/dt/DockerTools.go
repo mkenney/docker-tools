@@ -143,28 +143,16 @@ func (dt *DockerTools) usage(command string) {
 Generate usage:
 	docker-tools generate RECIPE_SOURCE RECIPE_NAME [options]
 */
-func (dt *DockerTools) Generate() string {
-	var recipe recipes.Recipe
+func (dt *DockerTools) Generate() {
+	var recipe *recipes.Recipe
 
 	commands, opts, err := dt.Commands.Shift()
 	if nil != err {
 		glog.Fatalf("Cannot generate script. Not really sure how I got here: %s", err)
 	}
 
-	recipeData := make([]string, 13, 13)
-	if opts.HasOpt("name")       {recipeData[1]  = opts.Opts["name"]}
-	if opts.HasOpt("prefix")     {recipeData[2]  = opts.Opts["prefix"]}
-	if opts.HasOpt("template")   {recipeData[3]  = opts.Opts["template"]}
-	if opts.HasOpt("image")      {recipeData[4]  = opts.Opts["image"]}
-	if opts.HasOpt("tag")        {recipeData[5]  = opts.Opts["tag"]}
-	if opts.HasOpt("volumes")    {recipeData[6]  = opts.Opts["volumes"]}
-	if opts.HasOpt("env")        {recipeData[7]  = opts.Opts["env"]}
-	if opts.HasOpt("entrypoint") {recipeData[8]  = opts.Opts["entrypoint"]}
-	if opts.HasOpt("cmd")        {recipeData[9]  = opts.Opts["cmd"]}
-	if opts.HasOpt("options")    {recipeData[10] = opts.Opts["options"]}
-
 	if 0 == len(commands) {
-		recipe = (*recipes.NewRecipe(recipeData))
+		recipe = recipes.NewRecipe([]string{})
 
 	} else {
 		if "recipes" != commands[0].Name && "registry" != commands[0].Name {
@@ -173,23 +161,25 @@ func (dt *DockerTools) Generate() string {
 		if !dt.Recipes.HasRecipe(commands[1].Name, commands[0].Name) {
 			glog.Fatalf("Unknown recipe '%s'", commands[1].Name)
 		}
-		recipe = (*dt.Recipes.GetRecipe(commands[0].Name, commands[1].Name))
-
-		recipe.ToolName   = recipeData[1]
-		recipe.Prefix     = recipeData[2]
-		recipe.Template   = recipeData[3]
-		recipe.Image      = recipeData[4]
-		recipe.Tag        = recipeData[5]
-		recipe.Entrypoint = recipeData[8]
-		recipe.Cmd        = recipeData[9]
-		//recipe.Options  = recipeData[10]
+		recipe = dt.Recipes.GetRecipe(commands[1].Name, commands[0].Name)
 
 		//recipe.SetCliVolumes(recipeData[6])
 		//recipe.SetCliEnv(recipeData[7])
-
 	}
 
-	return ""
+	if opts.HasOpt("name")       {recipe.ToolName = opts.Opts["name"]}
+	if opts.HasOpt("prefix")     {recipe.Prefix = opts.Opts["prefix"]}
+	if opts.HasOpt("template")   {recipe.Template = opts.Opts["template"]}
+	if opts.HasOpt("image")      {recipe.Image = opts.Opts["image"]}
+	if opts.HasOpt("tag")        {recipe.Tag = opts.Opts["tag"]}
+	if opts.HasOpt("volumes")    {recipe.SetVolumes(opts.Opts["volumes"])}
+	if opts.HasOpt("env")        {recipe.SetEnv(opts.Opts["env"])}
+	if opts.HasOpt("entrypoint") {recipe.Entrypoint = opts.Opts["entrypoint"]}
+	if opts.HasOpt("cmd")        {recipe.Cmd = opts.Opts["cmd"]}
+	//if opts.HasOpt("options")    {recipe.SetOptions(opts.Opts["options"])}
+
+
+	fmt.Printf("Recipe: %s", recipe.ToString())
 }
 
 /*

@@ -52,24 +52,6 @@ You can rebuild the global reference by running
 type CommandList []Command
 
 /*
-Shift returns a copy of the command stack with the first argument shifted out
-*/
-func (cmds CommandList) Shift() (retptr CommandList, retcmd Command, reterr error) {
-	retptr = make(CommandList, len(cmds)-1)
-
-	if 0 == len(cmds) {
-		reterr = errors.New("No commands found")
-	} else {
-		retcmd = cmds[0]
-		for a := 1; a < len(cmds); a++ {
-			retptr[a-1] = cmds[a]
-		}
-	}
-
-	return
-}
-
-/*
 New constructs a pointer to a CommandList instance
 */
 func New() (retval CommandList) {
@@ -79,7 +61,7 @@ func New() (retval CommandList) {
 	command := ""
 	cmdargs := make([]string, 0, 100)
 	flags := make(map[string]bool)
-	opts := make(map[string]string)
+	opts := make(map[string][]string)
 
 	for _, arg := range args {
 		fmt.Printf("arg: %v;\n", arg)
@@ -100,7 +82,7 @@ func New() (retval CommandList) {
 				cmd := Command{command, cmdargs[:], flags, opts}
 				retval = append(retval, cmd)
 				cmdargs = make([]string, 0, 100)
-				opts = make(map[string]string)
+				opts = make(map[string][]string)
 				flags = make(map[string]bool)
 			}
 			command = arg
@@ -113,9 +95,9 @@ func New() (retval CommandList) {
 				opt[0] = "--"
 			}
 			if 1 == len(opt) {
-				opts[opt[0]] = ""
+				opts[opt[0]] = append(opts[opt[0]], "")
 			} else {
-				opts[opt[0]] = opt[1]
+				opts[opt[0]] = append(opts[opt[0]], opt[1])
 			}
 
 			// begins with -, is a flag
@@ -133,6 +115,24 @@ func New() (retval CommandList) {
 	}
 	cmd := Command{command, cmdargs[:], flags, opts}
 	retval = append(retval, cmd)
+
+	return
+}
+
+/*
+Shift returns a copy of the command stack with the first argument shifted out
+*/
+func (cmds CommandList) Shift() (retptr CommandList, retcmd Command, reterr error) {
+	retptr = make(CommandList, len(cmds)-1)
+
+	if 0 == len(cmds) {
+		reterr = errors.New("No commands found")
+	} else {
+		retcmd = cmds[0]
+		for a := 1; a < len(cmds); a++ {
+			retptr[a-1] = cmds[a]
+		}
+	}
 
 	return
 }

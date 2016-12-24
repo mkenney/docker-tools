@@ -20,7 +20,7 @@
     And now, I've gone and put a new line. And now, I'm going to put a blank line!
 
     There it went! Hope it worked.
-  source: recipes.csv
+  source: recipes.yml
 - recipename: minimum-recipe
   toolname: dt-test-recipe-minimum
   prefix: /usr/local/bin
@@ -33,7 +33,7 @@
   cmd: ""
   options: []
   notes: The minimum amount of data required for a recipe
-  source: recipes.csv
+  source: recipes.yml
 - recipename: maximum-recipe
   toolname: dt-test-recipe-maximum
   prefix: /every/field/filled
@@ -52,7 +52,7 @@
   - TERM=xterm
   - FOO=bar
   notes: Every recipe field filled
-  source: recipes.csv
+  source: recipes.yml
 - recipename: not-installed
   toolname: dt-test-not-installed
   prefix: $HOME/bin
@@ -65,7 +65,7 @@
   cmd: ""
   options: []
   notes: ""
-  source: recipes.csv
+  source: recipes.yml
 - recipename: unmanaged
   toolname: dt-test-installed-unmanaged
   prefix: $HOME/bin
@@ -78,7 +78,7 @@
   cmd: ""
   options: []
   notes: ""
-  source: recipes.csv
+  source: recipes.yml
 - recipename: outdated
   toolname: dt-test-installed-outdated
   prefix: $HOME/bin
@@ -91,7 +91,7 @@
   cmd: ""
   options: []
   notes: ""
-  source: recipes.csv
+  source: recipes.yml
 - recipename: up-to-date
   toolname: dt-test-installed-up-to-date
   prefix: $HOME/bin
@@ -104,7 +104,7 @@
   cmd: ""
   options: []
   notes: ""
-  source: recipes.csv
+  source: recipes.yml
 - recipename: other-recipe
   toolname: dt-test-installed-other-recipe
   prefix: $HOME/bin
@@ -117,4 +117,4 @@
   cmd: ""
   options: []
   notes: ""
-  source: recipes.csv
+  source: recipes.yml

@@ -1,0 +1,23 @@
+- recipename: Registry-recipe
+  toolname: yarn
+  prefix: /usr/local/bin
+  template: tool
+  image: mkenney/npm
+  tag: 7.0-alpine
+  volumes:
+  - $(pwd):/src:rw
+  - $HOME/.ssh:/home/dev/.ssh:ro,noexec,nosuid
+  env:
+  - TERM=xterm
+  - FOO=bar
+  entrypoint: ""
+  cmd: /run-as-user /usr/local/bin/yarn
+  options:
+  - TERM=xterm
+  - FOO=bar
+  notes: |-
+    A yarn command that writes files as the current user running on Node 7.0. And a long note. Like really long. Really really long. So long I don't know what else to say. I mean, how much can you say about a long note. It's just a bunch of stupid text.
+    And now, I've gone and put a new line. And now, I'm going to put a blank line!
+
+    There it went! Hope it worked.
+  source: registry.yml

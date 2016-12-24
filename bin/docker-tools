@@ -20,7 +20,7 @@ if [ -t 0 ]; then
     argv[$argc]="-t"; argc=$((argc + 1))
 fi
 
-argv[$argc]="--volume=/Users/mkenney/my_projects/docker-tools/.docker-tools:/usr/local/docker-tools:ro"; argc=$((argc + 1))
+argv[$argc]="--volume=/Users/mkenney/my_projects/docker-tools/.docker-tools:/usr/local/docker-tools:rw"; argc=$((argc + 1))
 for path in "${paths[@]}"; do
     if [ -d $path ]; then
         argv[$argc]="--volume=$path:/host$path:ro"; argc=$((argc + 1))
