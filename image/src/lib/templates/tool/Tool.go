@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"flag"
 	"io/ioutil"
 	"lib/config"
 	"text/template"
@@ -25,8 +24,4 @@ func init() {
 		glog.Fatalf("Could not parse template file '%s'", err)
 	}
 	Template = tmpl
-}
-
-func init() {
-	flag.Parse() // Required for glog
 }

@@ -1,0 +1,121 @@
+
+ {{.labelNAME}}
+
+    {{.toolName}} —— shell script generator
+
+ {{.labelUSAGE}}
+
+    {{.toolName}} {{.usageOptionalCOMMAND}} {{.usageOptionalOPTIONS}}
+
+ {{.labelDESCRIPTION}}
+
+    Create and manage Docker container wrapper scripts ({{.keywordTools}}). Create, save and
+    manage '{{.keywordTool}}' configurations (sets of values that define a `docker run`
+    command) or "{{.keywordRecipes}}" and install or uninstall shell scripts ({{.keywordTools}}) based
+    on them. Generally useful for system utilities and dev tools (php-cli, node,
+    python-cli, etc.).
+
+ {{.labelEXAMPLES}}
+
+    Because, lets face it, this is the only part anyone actually {{._I}}wants{{._R}} to look
+    at. See `{{.exampleMoreHelp}}` for further details.
+
+    {{._WhiteBt}}List all available recipes{{._R}}
+        $ {{.exampleList}}
+
+    {{._WhiteBt}}List registered recipes{{._R}}
+        $ {{.exampleListRegistry}}
+
+    {{._WhiteBt}}List your recipes{{._R}}
+        $ {{.exampleListRecipes}}
+
+    {{._WhiteBt}}Install the Gulp recipe{{._R}}
+        $ {{.exampleInstallGulp}}
+
+        This will default to your custom gulp recipe if you have one of the same
+        name. To install the registered recipe instead, specify the registry as
+        the recipe source:
+
+        $ {{.exampleInstallGulpRegistry}}
+
+    {{._WhiteBt}}Generate a management script from a recipe in the registry{{._R}}
+        $ {{.exampleGenerateRegistryRecipe}}
+
+    {{._WhiteBt}}Generate a management script from a custom recipe{{._R}}
+        $ {{.exampleGenerateCustomRecipe}}
+
+    {{._WhiteBt}}Override the image tag when generating a script{{._R}}
+        $ {{.exampleGenerateRecipeCustomTag}}
+
+    {{._WhiteBt}}You can do the same thing when installing a recipe{{._R}}
+        $ {{.exampleInstallGulpOverrideTag}}
+
+    {{._WhiteBt}}Generate a `gulp` script from scratch{{._R}}
+        $ {{._I}}docker-tools {{._U}}generate{{._R}} \
+            {{._I}}--name="gulp" \{{._R}}
+            {{._I}}--prefix="/usr/local/bin" \{{._R}}
+            {{._I}}--template="tool" \{{._R}}
+            {{._I}}--image="mkenney/npm" \{{._R}}
+            {{._I}}--tag="7.0-alpine" \{{._R}}
+            {{._I}}--volume="$HOME/.ssh:/home/dev/.ssh:ro" \{{._R}}
+            {{._I}}--volume="$(pwd):/src:rw" \{{._R}}
+            {{._I}}--cmd="/run-as-user /usr/local/bin/gulp"{{._R}}
+
+    {{._WhiteBt}}... or just install it{{._R}}
+        $ {{._I}}docker-tools {{._U}}install{{._R}} \
+            {{._I}}--name="gulp" \{{._R}}
+            {{._I}}--prefix="/usr/local/bin" \{{._R}}
+            {{._I}}--template="tool" \{{._R}}
+            {{._I}}--image="mkenney/npm" \{{._R}}
+            {{._I}}--tag="7.0-alpine" \{{._R}}
+            {{._I}}--volume="$HOME/.ssh:/home/dev/.ssh:ro" \{{._R}}
+            {{._I}}--volume="$(pwd):/src:rw" \{{._R}}
+            {{._I}}--cmd="/run-as-user /usr/local/bin/gulp"{{._R}}
+
+ {{.labelCOMMANDS}}
+
+    See `{{.exampleMoreHelp}}` for command usage.
+
+    Things you can do with `{{.toolName}}`
+
+        {{.highlightConfig}}
+            Manage {{.toolName}} configuration values
+
+        {{.highlightSelfUpdate}}
+            Update the {{.toolName}} script
+
+    Things you can do with recipes
+
+        {{.highlightCreate}}
+            Create or update a {{.keywordTool}} {{.keywordRecipe}}
+
+        {{.highlightList}}
+            Display installed and/or registered {{.keywordRecipes}}
+
+        {{.highlightDelete}}
+            Delete a specified {{.keywordRecipe}}
+
+    Things you can do with tools
+
+        {{.highlightInstall}}
+            Install a {{.keywordTool}}
+
+        {{.highlightUninstall}}
+            Uninstall a {{.keywordTool}}
+
+        {{.highlightUpdate}}
+            Update an existing {{.keywordTool}}
+
+ {{.labelSHELL_VARIABLES}}
+
+    The following variables can be set in your shell to modify {{.toolName}}:
+
+    {{.highlightDOCKER_TOOLS_CONFIG_DIR}}
+        Define the path to the {{.toolName}} confguration directory. The
+        configuration directory is where {{.toolName}} stores metadata, program
+        libraries and stored tool {{.keywordRecipes}} as well as the {{.toolName}} {{.keywordRecipe}}
+        registry.
+
+    {{.highlightDOCKER_TOOLS_PREFIX}}
+        This is the default installation directory for tools unless specified as
+        an argument or in a {{.keywordRecipe}}.

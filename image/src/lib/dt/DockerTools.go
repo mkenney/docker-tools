@@ -8,13 +8,11 @@ the `docker-tools` primary command and it's sub-commands
 package dt
 
 import (
-	"flag"
 	"fmt"
 	"lib/cli"
 	"lib/config"
 	"lib/recipes"
-	"os"
-	"os/exec"
+	"lib/templates/docs"
 
 	"github.com/golang/glog"
 )
@@ -32,17 +30,7 @@ type DockerTools struct {
 	/*
 		the name of the command (docker-tools)
 	*/
-	Name string
-
-	/*
-		A key/value map of command-line options passed to docker-tools
-	*/
-	Opts map[string][]string
-
-	/*
-		A list of command-line flags passed to docker-tools
-	*/
-	Flags map[string]bool
+	Command cli.Command
 
 	/*
 		All commands for use internally. Should generally only be 1 primary
@@ -66,16 +54,11 @@ func New() *DockerTools {
 	dockerTools := new(DockerTools)
 	// Shift the cli options and flags for the docker-tools command off the
 	// stack and store them locally
-	var command cli.Command
 	var err error
-	cli.Commands, command, err = cli.Commands.Shift()
+	dockerTools.Commands, dockerTools.Command, err = cli.Commands.Shift()
 	if nil != err {
 		glog.Fatalf("Error shifting commands")
 	}
-	dockerTools.Commands = cli.Commands
-	dockerTools.Name = command.Name
-	dockerTools.Opts = command.Opts
-	dockerTools.Flags = command.Flags
 
 	// Load all recipe files
 	dockerTools.Recipes = recipes.New()
@@ -89,9 +72,10 @@ func New() *DockerTools {
 Run executes the docker-tools program
 */
 func (dt *DockerTools) Run() {
+	var command cli.Command
+
 	//fmt.Printf("Commands: %v", dt.Commands)
 	//os.Exit(0)
-	var err error
 	if 0 < len(dt.Commands) {
 		switch {
 		//        case "config" == dt.Commands[0].Name:
@@ -107,31 +91,39 @@ func (dt *DockerTools) Run() {
 		//            dt.EditRecipe()
 
 		case "generate" == dt.Commands[0].Name:
-			if nil == err {
-				dt.Generate()
+			dt.Commands, command, _ = dt.Commands.Shift()
+
+			if 0 < len(command.Opts["help"]) {
+				docs.GenerateHelp()
+			} else if command.HasFlag("h") {
+				docs.GenerateUsage()
+			} else {
+				dt.GenerateScript()
 			}
 
 		case "list" == dt.Commands[0].Name:
-			if nil == err {
-				dt.ListRecipes()
-			}
+			dt.ListRecipes()
 
-			//        case "delete":
-			//            dt.DeleteRecipe()
-			//
-			//        case "install":
-			//            dt.InstallTool()
-			//
-			//        case "uninstall":
-			//            dt.UninstallTool()
-			//
-			//        case "update":
-			//            dt.UpdateTool()
+		//        case "delete":
+		//            dt.DeleteRecipe()
+		//
+		//        case "install":
+		//            dt.InstallTool()
+		//
+		//        case "uninstall":
+		//            dt.UninstallTool()
+		//
+		//        case "update":
+		//            dt.UpdateTool()
 		default:
-			fmt.Printf("command.Name: %v", dt.Commands[0].Name)
+			docs.DockerToolsHelp()
 		}
 	} else {
-		dt.usage("dt")
+		if 0 < len(dt.Command.Opts["help"]) {
+			docs.DockerToolsHelp()
+		} else {
+			docs.DockerToolsUsage()
+		}
 	}
 }
 
@@ -143,7 +135,7 @@ func (dt *DockerTools) usage(command string) {
 Generate usage:
 	docker-tools generate RECIPE_SOURCE RECIPE_NAME [options]
 */
-func (dt *DockerTools) Generate() {
+func (dt *DockerTools) GenerateScript() {
 	var recipe *recipes.Recipe
 
 	commands, opts, err := dt.Commands.Shift()
@@ -208,32 +200,5 @@ func (dt *DockerTools) ListRecipes() {
 		listing += recipe.Render() + "\n"
 	}
 
-	pipestdin, pipestdout, err := os.Pipe()
-	if err != nil {
-		panic("Could not create pipe")
-	}
-
-	stdout := os.Stdout
-	os.Stdout = pipestdout
-
-	pager := exec.Command("less", "-r")
-	pager.Stdin = pipestdin
-	pager.Stdout = stdout // the pager uses the original stdout, not the pipe...
-	pager.Stderr = os.Stderr
-
-	defer func() {
-		pipestdout.Close()
-		err := pager.Run()
-		os.Stdout = stdout
-		if err != nil {
-			glog.Fatalf("%v", os.Stderr)
-			glog.Fatalf("%s", err)
-		}
-	}()
-
-	fmt.Println("\n\n" + listing)
-}
-
-func init() {
-	flag.Parse() // Required for glog
+	cli.Page(listing)
 }

@@ -1,0 +1,58 @@
+
+ {{.labelNAME}}
+
+    {{.toolName}} {{.toolCommand}} —— Generate a container management shell script
+
+ {{.labelUSAGE}}
+
+    {{.toolName}} {{.toolCommand}} {{.usageOptionalOPTIONS}}
+
+ {{.labelDESCRIPTION}}
+
+    Generate a container management script based on a {{.highlightRecipe}} or command options.
+    If a {{.highlightRecipe}} is specified, any property can be overridden using the
+    associated option
+
+ {{.labelOPTIONS}}
+
+    {{.optName}}={{.highlightName}}
+        Define the {{.highlightName}} of the script to be generated
+
+    {{.optPrefix}}={{.highlightPath}}
+        Specify the installation {{.highlightPath}} for the generated script
+
+    {{.optTemplate}}={{.highlightTemplate}}
+        Specify which script template to use, either `tool` or `service`
+
+    {{.optImage}}={{.highlightImage}}
+        Specify the docker {{.highlightImage}} to use for this container
+
+    {{.optTag}}={{.highlightTag}}
+        Specify the docker {{.highlightImage}} {{.highlightTag}} to use for this container, default 'latest'
+
+    {{.optVolume}}={{.highlightVolume}}
+        Repeatable, specify all volumes to mount in the container. Specifying
+        this replaces all volumes defined in the {{.highlightRecipe}}, if any. The format is
+        `[host-src:]container-dest[:<options>]`
+
+    {{.optEnv}}={{.highlightEnv}}
+        Repeatable, specify all environment variables you want to add to the
+        container. Specifying this replaces all environment variables defined in
+        the {{.highlightRecipe}}, if any.
+
+    {{.optEntrypoint}}={{.highlightEntrypoint}}
+        Specify the {{.highlightEntrypoint}} command to execute when starting the container.
+        For services, this should be a non-interactive daemon or script that
+        outputs to stdout.
+
+    {{.optCmd}}={{.highlightCommand}}
+        Specify a {{.highlightCommand}} to prefix to any command-line arguments passed to the
+        docker container.
+
+    {{.optOption}}={{.highlightOption}}
+        Repeatable, specify all additional docker-run command {{.highlightOptions}} that
+        should be passed to `docker run` when executing the generated script
+
+ {{.labelEXAMPLES}}
+
+    $ {{.exampleInstallGulp}}

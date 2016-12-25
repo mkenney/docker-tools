@@ -285,3 +285,92 @@ func Test() {
            fmt.Printf(U("       U(The quick brown fox jumped over the lazy dog\n"))
        fmt.Printf(Reset("   Reset(The quick brown fox jumped over the lazy dog\n\n"))
 }
+
+/*
+GetTemplateVars will populate and return a string map with CLI style variables
+*/
+func GetTemplateVars() (retval map[string]string) {
+    retval = make(map[string]string)
+    retval["_R"] = reset
+    retval["_B"] = bold
+    retval["_I"] = italic
+    retval["_U"] = underline
+    retval["_Reset"] = reset
+    retval["_Bold"] = bold
+    retval["_Italic"] = italic
+    retval["_Underline"] = underline
+    retval["_Normal"] = normal
+    retval["_Dim"] = dim
+    retval["_Blink"] = blink
+    retval["_Blinkfast"] = blinkfast
+    retval["_Reverse"] = reverse
+    retval["_Hidden"] = hidden
+    retval["_Strikethrough"] = strikethrough
+    retval["_Black"] = black
+    retval["_Gray"] = gray
+    retval["_Grey"] = grey
+    retval["_Brown"] = brown
+    retval["_White"] = white
+    retval["_WhiteLt"] = whitelt
+    retval["_WhiteBt"] = whitebt
+    retval["_WhiteDk"] = whitedk
+    retval["_Indigo"] = indigo
+    retval["_IndigoLt"] = indigolt
+    retval["_IndigoBt"] = indigobt
+    retval["_IndigoDk"] = indigodk
+    retval["_Green"] = green
+    retval["_GreenLt"] = greenlt
+    retval["_GreenBt"] = greenbt
+    retval["_GreenDk"] = greendk
+    retval["_Red"] = red
+    retval["_RedLt"] = redlt
+    retval["_RedBt"] = redbt
+    retval["_RedDk"] = reddk
+    retval["_Orange"] = orange
+    retval["_OrangeLt"] = orangelt
+    retval["_OrangeBt"] = orangebt
+    retval["_OrangeDk"] = orangedk
+    retval["_Yellow"] = yellow
+    retval["_YellowLt"] = yellowlt
+    retval["_YellowBt"] = yellowbt
+    retval["_YellowDk"] = yellowdk
+    retval["_Violet"] = violet
+    retval["_VioletLt"] = violetlt
+    retval["_VioletBt"] = violetbt
+    retval["_VioletDk"] = violetdk
+    retval["_Blue"] = blue
+    retval["_BlueLt"] = bluelt
+    retval["_BlueBt"] = bluebt
+    retval["_BlueDk"] = bluedk
+
+    // Common document labels
+    retval["labelNAME"]                        = B("NAME")
+    retval["labelUSAGE"]                       = B("USAGE")
+    retval["labelCOMMAND"]                     = B("COMMAND")
+    retval["labelCOMMANDS"]                    = B("COMMANDS")
+    retval["labelDESCRIPTION"]                 = B("DESCRIPTION")
+    retval["labelOPTIONS"]                     = B("OPTIONS")
+    retval["labelEXAMPLES"]                    = B("EXAMPLES")
+    retval["labelSHELL_VARIABLES"]             = B("SHELL VARIABLES")
+
+    // Common document keywords
+    retval["keywordTool"]                      = WhiteBt(I(U("tool")))
+    retval["keywordTools"]                     = WhiteBt(I(U("tools")))
+    retval["keywordRecipe"]                    = WhiteBt(I(U("recipe")))
+    retval["keywordRecipes"]                   = WhiteBt(I(U("recipes")))
+
+    // Common document command keywords
+    retval["toolName"]                         = WhiteBt("docker-tools")
+
+    // Common usage vars
+    retval["usageUSAGE"]                       = "USAGE"
+    retval["usageToolName"]                    = "docker-tools"
+    retval["usageCOMMAND"]                     = U("COMMAND")
+    retval["usageRECIPE"]                      = U("RECIPE")
+    retval["usageOPTIONS"]                     = U("OPTIONS")
+    retval["usageOptionalCOMMAND"]             = I(U("COMMAND"))
+    retval["usageOptionalRECIPE"]              = I(U("RECIPE"))
+    retval["usageOptionalOPTIONS"]             = I(U("OPTIONS"))
+
+    return
+}

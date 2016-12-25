@@ -10,7 +10,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"lib/config"
 	"lib/templates/tool"
@@ -35,11 +34,11 @@ type Recipe struct {
 	Template   string   // 3.  Tool template name (tool, service (daemons))
 	Image      string   // 4.  Docker image name
 	Tag        string   // 5.  Docker image tag
-	Volumes    []string // 6.  JSON array of volume mount strings
-	Env        []string // 7.  JSON array of environment variables to pass
+	Volume     []string // 6.  Volume mount strings
+	Env        []string // 7.  Environment variables to pass
 	Entrypoint string   // 8.  Container entrypoint
 	Cmd        string   // 9.  Tool/container commands
-	Options    []string // 10. Additional `docker run` cli arguments
+	Option     []string // 10. Additional `docker run` cli arguments
 	Notes      string   // 11. Any notes about the recipe
 	Source     string   // 12. The name of the sourcefile, either 'recipes' or 'registry'
 }
@@ -67,7 +66,7 @@ func NewRecipe(recipeData []string) (recipe *Recipe) {
 	json.Unmarshal([]byte(recipeData[6]), &jsonData)
 	if nil != jsonData {
 		for _, volstr := range jsonData.([]interface{}) {
-			recipe.Volumes = append(recipe.Volumes, volstr.(string))
+			recipe.Volume = append(recipe.Volume, volstr.(string))
 		}
 	}
 
@@ -83,7 +82,7 @@ func NewRecipe(recipeData []string) (recipe *Recipe) {
 	json.Unmarshal([]byte(recipeData[10]), &jsonData)
 	if nil != jsonData {
 		for _, volstr := range jsonData.([]interface{}) {
-			recipe.Options = append(recipe.Options, volstr.(string))
+			recipe.Option = append(recipe.Option, volstr.(string))
 		}
 	}
 
@@ -122,7 +121,7 @@ func (recipe *Recipe) AddOption(option string) (reterr error) {
 		reterr = fmt.Errorf("Invalid option definition '%s', a valid `docker run` CLI option is required", option)
 	}
 	if nil == reterr {
-		for _, curOpt := range recipe.Options {
+		for _, curOpt := range recipe.Option {
 			if curOpt == option {
 				reterr = fmt.Errorf("Option variable already exists in this recipe '%s'", curOpt)
 				break
@@ -130,7 +129,7 @@ func (recipe *Recipe) AddOption(option string) (reterr error) {
 		}
 	}
 	if nil == reterr {
-		recipe.Options = append(recipe.Options, option)
+		recipe.Option = append(recipe.Option, option)
 	}
 	return
 }
@@ -144,7 +143,7 @@ func (recipe *Recipe) AddVolume(volume string) (reterr error) {
 		reterr = fmt.Errorf("Invalid volume definition '%s', both `src` and `dest` are required", volume)
 	}
 	if nil == reterr {
-		for _, vol := range recipe.Volumes {
+		for _, vol := range recipe.Volume {
 			if vol == volume {
 				reterr = fmt.Errorf("Volume already exists in this recipe '%s'", vol)
 				break
@@ -152,7 +151,7 @@ func (recipe *Recipe) AddVolume(volume string) (reterr error) {
 		}
 	}
 	if nil == reterr {
-		recipe.Volumes = append(recipe.Volumes, volume)
+		recipe.Volume = append(recipe.Volume, volume)
 	}
 	return
 }
@@ -236,7 +235,7 @@ func (recipe *Recipe) renderVars() map[string]string {
 	retval["Entrypoint"] = recipe.renderEntrypoint()
 	retval["Volumes"] = recipe.renderVolumes()
 	retval["Env"] = recipe.renderEnv()
-	//retval["Options"]       = recipe.renderOptions()
+	//retval["Options"]       = recipe.renderOption()
 	return retval
 }
 
@@ -253,11 +252,11 @@ func (recipe *Recipe) toStringVars() (retval map[string]string) {
 	retval["Template"] = escapeBashVar(recipe.Template)
 	retval["Image"] = escapeBashVar(recipe.Image)
 	retval["Tag"] = escapeBashVar(recipe.Tag)
-	retval["Volumes"] = escapeBashVar("-v "+strings.Join(recipe.Volumes, " -v "))
+	retval["Volumes"] = escapeBashVar("-v "+strings.Join(recipe.Volume, " -v "))
 	retval["Env"] = escapeBashVar("-e "+strings.Join(recipe.Env, " -e "))
 	retval["Entrypoint"] = escapeBashVar(recipe.Entrypoint)
 	retval["Cmd"] = escapeBashVar(recipe.Cmd)
-	retval["Options"] = escapeBashVar(strings.Join(recipe.Options, " "))
+	retval["Option"] = escapeBashVar(strings.Join(recipe.Option, " "))
 	retval["Notes"] = escapeBashVar(recipe.Notes)
 	retval["Source"] = escapeBashVar(recipe.Source)
 
@@ -283,7 +282,7 @@ func (recipe *Recipe) stringEntrypoint() string {
 	return "--entrypoint=\""+recipe.Entrypoint+"\""
 }
 func (recipe *Recipe) stringVolumes() (retval string) {
-	for _, volume := range recipe.Volumes {
+	for _, volume := range recipe.Volume {
 		retval += "-v "+volume+" "
 	}
 	return
@@ -294,8 +293,8 @@ func (recipe *Recipe) stringEnv() (retval string) {
 	}
 	return
 }
-func (recipe *Recipe) stringOptions() (retval string) {
-	for _, opt := range recipe.Options {
+func (recipe *Recipe) stringOption() (retval string) {
+	for _, opt := range recipe.Option {
 		retval += "-e \""+opt+"\" "
 	}
 	return
@@ -307,9 +306,8 @@ renderVolumes
 func (recipe *Recipe) renderVolumes() string {
 	var status string
 
-	// Volumes is a JSON byte array
-	if 0 < len(recipe.Volumes) {
-		for _, volstr := range recipe.Volumes {
+	if 0 < len(recipe.Volume) {
+		for _, volstr := range recipe.Volume {
 			volparts := strings.Split(volstr, ":")
 
 			volmode := ""
@@ -574,7 +572,7 @@ func (recipe *Recipe) renderStatus() string {
 							isrecipe = true
 						}
 					}
-					if strings.Contains(string(line), "__TOOLS_VERSION__="+config.DockerToolsVersion) {
+					if strings.Contains(string(line), "__DOCKER_TOOLS_VERSION__="+config.DockerToolsVersion) {
 						isupdated = true
 					}
 				}
@@ -595,8 +593,4 @@ func (recipe *Recipe) renderStatus() string {
 	}
 
 	return status
-}
-
-func init() {
-	flag.Parse() // Required for glog
 }

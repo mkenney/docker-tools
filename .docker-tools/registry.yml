@@ -1,4 +1,4 @@
-- recipename: Registry-recipe
+- recipename: registry-recipe
   toolname: yarn
   prefix: /usr/local/bin
   template: tool
