@@ -1,54 +1,42 @@
 #!/usr/bin/env bash
 
 #
-# This file was created by the `docker-tools` script and documentation
-# generator. Any modifications made here may be overwritten without notice.
+# This file was created by the `docker-tools` script generator. Any
+# modifications made here may be overwritten without notice.
 #
 # See `docker-tools --help` for more information.
 #
 # This script wraps a `docker run` command to execute a docker container.
 #
 
-declare __DOCKER_TOOLS_VERSION__="{{.DockerToolsVersion}}"
-declare __RECIPE_NAME__="{{.RecipeName}}"
-declare __RECIPE_NAME__="{{.ToolName}}"
-declare __RECIPE_NAME__="{{.Prefix}}"
-declare __RECIPE_TEMPLATE__="{{.Template}}"
-declare __RECIPE_IMAGE__="{{.Image}}"
-declare __RECIPE_IMAGE_TAG__="{{.Tag}}"
-declare __RECIPE_VOLUMES__="{{.Volumes}}"
-declare __RECIPE_ENV__="{{.Env}}"
-declare __RECIPE_ENTRYPOINT__="{{.Entrypoint}}"
-declare __RECIPE_CMD__="{{.Cmd}}"
-declare __RECIPE_OPTIONS__="{{.Options}}"
-declare __RECIPE_SOURCE__="{{.Source}}"
-declare __RECIPE_NOTES__="{{.Notes}}"
+if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then DOCKER_TOOLS_CONFIG_DIR=$HOME/.docker-tools; fi
+if [ "" == "$DOCKER_TOOLS_PREFIX_DIR" ]; then DOCKER_TOOLS_PREFIX_DIR={{.DefaultPrefix}}; fi
 
-function __term__ {
+declare DOCKER_TOOLS_VERSION="{{.DockerToolsVersion}}"
+declare RECIPE_NAME="{{.RecipeName}}"
+declare TOOL_NAME="{{.ToolName}}"
+declare PREFIX="{{.Prefix}}"
+declare TEMPLATE="{{.Template}}"
+declare IMAGE="{{.Image}}"
+declare TAG="{{.Tag}}"
+declare VOLUME="{{.Volume}}"
+declare ENV="{{.Env}}"
+declare ENTRYPOINT="{{.Entrypoint}}"
+declare CMD="{{.Cmd}}"
+declare OPTION="{{.Option}}"
+declare SOURCE="{{.Source}}"
+declare NOTES="{{.Notes}}"
+
+function term {
     local ret_val
     if [ -t 0 ]; then
         ret_val="-t"
     fi
     printf -- "$ret_val"
 }
-function __volumes__ {
-    printf "%s" "{{.Volumes}}"
-}
-function __entrypoint__ {
-    printf "%s" "{{.Entrypoint}}"
-}
-function __image__ {
-    printf "%s" "{{.Image}}"
-}
-function __tag__ {
-    printf "%s" "{{.Tag}}"
-}
-function __command__ {
-    printf "%s" "{{.Cmd}}"
-}
 
 if [ "self-update" = "$1" ]; then
-    `docker pull $(__image__):$(__tag__)`
+    eval docker pull $IMAGE:$TAG
 else
-    docker run --rm -i $(__term__) $(__volumes__) $(__entrypoint__) $(__image__):$(__tag__) $(__command__) $@
+    eval docker run --rm -i $(term) $OPTION $ENV $VOLUME $ENTRYPOINT $IMAGE:$TAG $CMD $@
 fi

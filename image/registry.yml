@@ -1,10 +1,30 @@
+- recipename: docker-tools
+  toolname: docker-tools
+  prefix: "$HOME/my_projects/docker-tools/bin"
+  template: tool
+  image: mkenney/docker-tools
+  tag: ""
+  volume:
+  - $DOCKER_TOOLS_CONFIG_DIR:/usr/local/docker-tools:rw
+  env:
+  - TERM=$TERM
+  - HOME=$HOME
+  - HOST_PATH=$PATH
+  - DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR
+  - DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR
+  entrypoint: ""
+  cmd: ""
+  option: []
+  notes: |-
+    This recipe will generate the `docker-tools` container management script.
+  source: registry
 - recipename: registry-recipe
   toolname: yarn
   prefix: /usr/local/bin
   template: tool
   image: mkenney/npm
   tag: 7.0-alpine
-  volumes:
+  volume:
   - $(pwd):/src:rw
   - $HOME/.ssh:/home/dev/.ssh:ro,noexec,nosuid
   env:
@@ -12,7 +32,7 @@
   - FOO=bar
   entrypoint: ""
   cmd: /run-as-user /usr/local/bin/yarn
-  options:
+  option:
   - TERM=xterm
   - FOO=bar
   notes: |-
@@ -20,4 +40,4 @@
     And now, I've gone and put a new line. And now, I'm going to put a blank line!
 
     There it went! Hope it worked.
-  source: registry.yml
+  source: registry

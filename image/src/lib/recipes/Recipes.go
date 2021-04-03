@@ -37,7 +37,7 @@ GetRecipe returns a specified recipe
 func (rcps Recipes) GetRecipe(recipeName, recipeSource string) (retval *Recipe) {
 	for _, recipe := range rcps {
 		if recipe.RecipeName == recipeName {
-			if recipe.Source == recipeSource + ".yml" {
+			if recipe.Source == recipeSource {
 				retval = recipe
 				break
 			} else if "" == recipeSource {
@@ -55,7 +55,7 @@ HasRecipe returns whether a specified recipe exists in the index
 func (rcps Recipes) HasRecipe(recipeName, recipeSource string) (retval bool) {
 	for _, recipe := range rcps {
 		if recipe.RecipeName == recipeName {
-			if recipe.Source == recipeSource + ".yml" {
+			if recipe.Source == recipeSource {
 				retval = true
 				break
 			} else if "" == recipeSource {
@@ -103,7 +103,7 @@ func (rcps *Recipes) Load(recipeFile string) *Recipes {
 		var fileRecipes Recipes
 		yaml.Unmarshal(fileBytes, &fileRecipes)
 		for _, tmpRecipe := range fileRecipes {
-			tmpRecipe.Source = path.Base(recipeFile)
+			tmpRecipe.Source = path.Base(recipeFile)[0:len(path.Base(recipeFile)) - len(path.Ext(recipeFile))]
 			rcps = rcps.SetRecipe(tmpRecipe)
 		}
 	}
@@ -115,7 +115,7 @@ func (rcps *Recipes) Load(recipeFile string) *Recipes {
 Save saves all the stuff
 */
 func (rcps *Recipes) Save() *Recipes {
-	for _, outfile := range []string{"registry.yml","recipes.yml"} {
+	for _, outfile := range []string{config.DockerToolsRegistry, config.ConfPath+"/recipes.yml"} {
 		saveSet := make(Recipes, 0)
 		for _, recipe := range (*rcps) {
 			if recipe.Source == outfile {
@@ -126,7 +126,7 @@ func (rcps *Recipes) Save() *Recipes {
 		yamlBytes, err := yaml.Marshal(saveSet)
 		if nil != err {glog.Fatalf("Unable to serialize recipe data: %s", err)}
 
-		err = ioutil.WriteFile(config.Values.ConfPath + "/" + outfile, yamlBytes, 0644)
+		err = ioutil.WriteFile(outfile, yamlBytes, 0644)
 		if nil != err {
 			glog.Fatalf("Error writing recipe data: %s", err)
 		}

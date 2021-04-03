@@ -20,8 +20,8 @@ LABEL \
     org.label-schema.vendor="WebBedlam.com"
 
 ARG GIT_COMMIT
-ENV GIT_COMMIT ${GIT_COMMIT}
 
+ENV GIT_COMMIT ${GIT_COMMIT}
 ENV DOCKER_TOOLS_CONF_DIR /usr/local/docker-tools
 ENV TERM xterm-256color
 

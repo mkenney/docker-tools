@@ -4,7 +4,7 @@
   template: tool
   image: mkenney/npm
   tag: 7.0-alpine
-  volumes:
+  volume:
   - $(pwd):/src:rw
   - $HOME/.ssh:/home/dev/.ssh:ro,noexec,nosuid
   env:
@@ -12,7 +12,7 @@
   - FOO=bar
   entrypoint: ""
   cmd: /run-as-user /usr/local/bin/yarn
-  options:
+  option:
   - TERM=xterm
   - FOO=bar
   notes: |-
@@ -20,27 +20,27 @@
     And now, I've gone and put a new line. And now, I'm going to put a blank line!
 
     There it went! Hope it worked.
-  source: recipes.yml
+  source: recipes
 - recipename: minimum-recipe
   toolname: dt-test-recipe-minimum
   prefix: /usr/local/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: The minimum amount of data required for a recipe
-  source: recipes.yml
+  source: recipes
 - recipename: maximum-recipe
   toolname: dt-test-recipe-maximum
   prefix: /every/field/filled
   template: tool
   image: mkenney/npm
   tag: 7.0-alpine
-  volumes:
+  volume:
   - $(pwd):/src:rw
   - $HOME/.ssh:/home/dev/.ssh:noexec
   env:
@@ -48,73 +48,73 @@
   - FOO=bar
   entrypoint: /entrypoint.sh
   cmd: /post-entrypoint pre-commands
-  options:
+  option:
   - TERM=xterm
   - FOO=bar
   notes: Every recipe field filled
-  source: recipes.yml
+  source: recipes
 - recipename: not-installed
   toolname: dt-test-not-installed
   prefix: $HOME/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: ""
-  source: recipes.yml
+  source: recipes
 - recipename: unmanaged
   toolname: dt-test-installed-unmanaged
   prefix: $HOME/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: ""
-  source: recipes.yml
+  source: recipes
 - recipename: outdated
   toolname: dt-test-installed-outdated
   prefix: $HOME/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: ""
-  source: recipes.yml
+  source: recipes
 - recipename: up-to-date
   toolname: dt-test-installed-up-to-date
   prefix: $HOME/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: ""
-  source: recipes.yml
+  source: recipes
 - recipename: other-recipe
   toolname: dt-test-installed-other-recipe
   prefix: $HOME/bin
   template: tool
   image: mkenney/npm
   tag: latest
-  volumes: []
+  volume: []
   env: []
   entrypoint: ""
   cmd: ""
-  options: []
+  option: []
   notes: ""
-  source: recipes.yml
+  source: recipes

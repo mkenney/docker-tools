@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+DOCKER_TOOLS_CONFIG_DIR=/Users/mkenney/my_projects/docker-tools/.docker-tools
+if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then DOCKER_TOOLS_CONFIG_DIR=$HOME/.docker-tools; fi
+if [ "" == "$DOCKER_TOOLS_PREFIX_DIR" ]; then DOCKER_TOOLS_PREFIX_DIR=/usr/local/bin; fi
+
+# Build out the args as an array because there can easily be too many to manage without
+# parsing the elements back into args: http://stackoverflow.com/a/411999/867812
+declare -a argv
+declare argc=0
+
+# Split out the PATH so each can be mounted into the container
+declare old_IFS=IFS
+IFS=$':'
+declare -a paths=($PATH)
+IFS=$old_IFS
+
+
+if [ -t 0 ]; then
+    argv[$argc]="-t"; argc=$((argc + 1))
+fi
+
+argv[$argc]="--volume=/Users/mkenney/my_projects/docker-tools/.docker-tools:/usr/local/docker-tools:rw"; argc=$((argc + 1))
+for path in "${paths[@]}"; do
+    if [ -d $path ]; then
+        argv[$argc]="--volume=$path:/host$path:ro"; argc=$((argc + 1))
+    fi
+done
+
+argv[$argc]="--env=\"TERM=$TERM\""; argc=$((argc + 1))
+argv[$argc]="--env=\"HOME=$HOME\""; argc=$((argc + 1))
+argv[$argc]="--env=\"DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR\""; argc=$((argc + 1))
+argv[$argc]="--env=\"DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR\""; argc=$((argc + 1))
+#argv[$argc]="--entrypoint=sh"; argc=$((argc + 1))
+
+
+declare __image__="mkenney/docker-tools"
+declare __tag__="latest"
+
+#declare __env__="--env=\"TERM=$TERM\" --env=\"HOST_HOME=$HOME\" --env=\"DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR\" --env=\"DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR\" "
+#declare __env__="-e TERM=$TERM -e HOST_PATH=$PATH -e HOST_HOME=$HOME -e DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR -e DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR "
+
+
+#echo "docker run --rm ${__term__} -i "${argv[@]}" ${__image__}:${__tag__} ${__command__} $@"
+docker run --rm ${__term__} -i "${argv[@]}" ${__image__}:${__tag__} ${__command__} $@

@@ -9,7 +9,6 @@ package recipes
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"lib/config"
 	"lib/templates/tool"
@@ -46,48 +45,8 @@ type Recipe struct {
 /*
 NewRecipe will generate a Recipe model from a data array
 */
-func NewRecipe(recipeData []string) (recipe *Recipe) {
+func NewRecipe() (recipe *Recipe) {
 	recipe = new(Recipe)
-	recipe.RecipeName = recipeData[0]
-	recipe.ToolName = recipeData[1]
-	recipe.Prefix = recipeData[2]
-	if "" == recipe.Prefix {
-		recipe.Prefix = config.Values.DefaultPrefix
-	}
-	recipe.Template = recipeData[3]
-	recipe.Image = recipeData[4]
-	recipe.Tag = recipeData[5]
-	if "" == recipe.Tag {
-		recipe.Tag = "latest"
-	}
-
-	var jsonData interface{}
-
-	json.Unmarshal([]byte(recipeData[6]), &jsonData)
-	if nil != jsonData {
-		for _, volstr := range jsonData.([]interface{}) {
-			recipe.Volume = append(recipe.Volume, volstr.(string))
-		}
-	}
-
-	json.Unmarshal([]byte(recipeData[7]), &jsonData)
-	if nil != jsonData {
-		for _, volstr := range jsonData.([]interface{}) {
-			recipe.Env = append(recipe.Env, volstr.(string))
-		}
-	}
-	recipe.Entrypoint = recipeData[8]
-	recipe.Cmd = recipeData[9]
-
-	json.Unmarshal([]byte(recipeData[10]), &jsonData)
-	if nil != jsonData {
-		for _, volstr := range jsonData.([]interface{}) {
-			recipe.Option = append(recipe.Option, volstr.(string))
-		}
-	}
-
-	recipe.Notes = recipeData[11]
-	recipe.Source = recipeData[12]
 	return
 }
 
@@ -218,8 +177,8 @@ func (recipe *Recipe) ToString() string {
 /*
 renderVars
 */
-func (recipe *Recipe) renderVars() map[string]string {
-	retval := make(map[string]string)
+func (recipe *Recipe) renderVars() (retval map[string]string) {
+	retval = make(map[string]string)
 
 	retval["Source"] = recipe.renderSource()
 	retval["RecipeName"] = recipe.renderRecipeName()
@@ -236,7 +195,8 @@ func (recipe *Recipe) renderVars() map[string]string {
 	retval["Volumes"] = recipe.renderVolumes()
 	retval["Env"] = recipe.renderEnv()
 	//retval["Options"]       = recipe.renderOption()
-	return retval
+
+	return
 }
 
 /*
@@ -246,19 +206,20 @@ func (recipe *Recipe) toStringVars() (retval map[string]string) {
 	retval = make(map[string]string)
 
 	retval["DockerToolsVersion"] = escapeBashVar(config.DockerToolsVersion)
-	retval["RecipeName"] = escapeBashVar(recipe.RecipeName)
-	retval["ToolName"] = escapeBashVar(recipe.ToolName)
-	retval["Prefix"] = escapeBashVar(recipe.Template)
-	retval["Template"] = escapeBashVar(recipe.Template)
-	retval["Image"] = escapeBashVar(recipe.Image)
-	retval["Tag"] = escapeBashVar(recipe.Tag)
-	retval["Volumes"] = escapeBashVar("-v "+strings.Join(recipe.Volume, " -v "))
-	retval["Env"] = escapeBashVar("-e "+strings.Join(recipe.Env, " -e "))
-	retval["Entrypoint"] = escapeBashVar(recipe.Entrypoint)
-	retval["Cmd"] = escapeBashVar(recipe.Cmd)
-	retval["Option"] = escapeBashVar(strings.Join(recipe.Option, " "))
-	retval["Notes"] = escapeBashVar(recipe.Notes)
-	retval["Source"] = escapeBashVar(recipe.Source)
+	retval["DefaultPrefix"] = escapeBashVar(config.DockerToolsDefaultPrefixDir)
+	retval["RecipeName"] = escapeBashVar(recipe.stringRecipeName())
+	retval["ToolName"] = escapeBashVar(recipe.stringToolName())
+	retval["Prefix"] = escapeBashVar(recipe.stringPrefix())
+	retval["Template"] = escapeBashVar(recipe.stringTemplate())
+	retval["Image"] = escapeBashVar(recipe.stringImage())
+	retval["Tag"] = escapeBashVar(recipe.stringTag())
+	retval["Volume"] = escapeBashVar(recipe.stringVolume())
+	retval["Env"] = escapeBashVar(recipe.stringEnv())
+	retval["Entrypoint"] = escapeBashVar(recipe.stringEntrypoint())
+	retval["Cmd"] = escapeBashVar(recipe.stringCmd())
+	retval["Option"] = escapeBashVar(recipe.stringOption())
+	retval["Notes"] = escapeBashVar(recipe.stringNotes())
+	retval["Source"] = escapeBashVar(recipe.stringSource())
 
 	return
 }
@@ -269,35 +230,66 @@ func escapeBashVar(str string) (retval string) {
 	return
 }
 
-func (recipe *Recipe) stringImage() string {
-	return recipe.Image
+func (recipe *Recipe) stringSource() string {
+	return escapeBashVar(recipe.Source)
 }
-func (recipe *Recipe) stringTag() string {
-	return recipe.Tag
+func (recipe *Recipe) stringNotes() string {
+	return escapeBashVar(recipe.Notes)
 }
 func (recipe *Recipe) stringCmd() string {
-	return recipe.Cmd
+	return escapeBashVar(recipe.Cmd)
 }
-func (recipe *Recipe) stringEntrypoint() string {
-	return "--entrypoint=\""+recipe.Entrypoint+"\""
+func (recipe *Recipe) stringTemplate() string {
+	return escapeBashVar(recipe.Template)
 }
-func (recipe *Recipe) stringVolumes() (retval string) {
+func (recipe *Recipe) stringRecipeName() string {
+	return escapeBashVar(recipe.RecipeName)
+}
+func (recipe *Recipe) stringToolName() string {
+	return escapeBashVar(recipe.ToolName)
+}
+func (recipe *Recipe) stringPrefix() string {
+	retval := recipe.Prefix
+	if "" == retval {
+		retval = config.DockerToolsDefaultPrefixDir
+	}
+	return escapeBashVar(retval)
+}
+func (recipe *Recipe) stringImage() string {
+	return escapeBashVar(recipe.Image)
+}
+func (recipe *Recipe) stringTag() (retval string) {
+	retval = escapeBashVar(recipe.Tag)
+	if "" == retval {
+		retval = "latest"
+	}
+	return
+}
+func (recipe *Recipe) stringEntrypoint() (retval string) {
+	if "" != recipe.Entrypoint {
+		retval = "--entrypoint=\""+escapeBashVar(recipe.Entrypoint)+"\""
+	}
+	return
+}
+func (recipe *Recipe) stringVolume() (retval string) {
 	for _, volume := range recipe.Volume {
-		retval += "-v "+volume+" "
+		retval += "-v \""+escapeBashVar(volume)+"\" "
+	}
+	if "docker-tools" == recipe.RecipeName && "registry" == recipe.Source {
+		for _, path := range config.HostPath {
+			retval += "-v \""+path+":/host"+path+":ro\" "
+		}
 	}
 	return
 }
 func (recipe *Recipe) stringEnv() (retval string) {
 	for _, env := range recipe.Env {
-		retval += "-e \""+env+"\" "
+		retval += "-e \""+escapeBashVar(env)+"\" "
 	}
 	return
 }
-func (recipe *Recipe) stringOption() (retval string) {
-	for _, opt := range recipe.Option {
-		retval += "-e \""+opt+"\" "
-	}
-	return
+func (recipe *Recipe) stringOption() string {
+	return strings.Join(recipe.Option, " ")
 }
 
 /*
@@ -336,7 +328,6 @@ func (recipe *Recipe) renderVolumes() string {
 				if 0 < len(modeparts) {
 					modelen += (len(modeparts) - 1)
 				}
-				//volmode = fmt.Sprintf("% "+strconv.Itoa(9 - modelen)+"s", "")+strings.Join(modeparts, ", ")
 				volmode = strings.Join(modeparts, ", ")
 			}
 
@@ -405,8 +396,12 @@ func (recipe *Recipe) renderImage() string {
 /*
 renderTag
 */
-func (recipe *Recipe) renderTag() string {
-	return recipe.Tag
+func (recipe *Recipe) renderTag() (retval string) {
+	retval = recipe.Tag
+	if "" == retval {
+		retval = "latest"
+	}
+	return
 }
 
 /*
@@ -471,9 +466,12 @@ func (recipe *Recipe) renderTemplate() string {
 /*
 renderPrefix
 */
-func (recipe *Recipe) renderPrefix() string {
-	recipe.Prefix = strings.Replace(recipe.Prefix, "$HOME", config.Values.HostHome, -1)
-	return recipe.Prefix
+func (recipe *Recipe) renderPrefix() (retval string) {
+	retval = strings.Replace(recipe.Prefix, "$HOME", config.HostHome, -1)
+	if "" == retval {
+		retval = config.DockerToolsDefaultPrefixDir
+	}
+	return
 }
 
 /*
@@ -489,7 +487,7 @@ _toolStatus
 func (recipe *Recipe) _toolStatus() string {
 	var status string
 
-	hostprefix := strings.Replace(recipe.Prefix, "$HOME", config.Values.HostHome, -1)
+	hostprefix := strings.Replace(recipe.Prefix, "$HOME", config.HostHome, -1)
 	if _, err := os.Stat("/host" + hostprefix + "/" + recipe.ToolName); os.IsNotExist(err) {
 		status = ui.Grey(ui.B("not installed"))
 
@@ -504,10 +502,10 @@ func (recipe *Recipe) _toolStatus() string {
 			if stats, statserr := file.Stat(); nil == statserr && !stats.IsDir() {
 				scanner := bufio.NewScanner(file)
 				for scanner.Scan() {
-					if strings.Contains(scanner.Text(), "__TOOLS_VERSION__") {
-						if strings.Contains(scanner.Text(), "__RECIPE_NAME__="+recipe.RecipeName) {
+					if strings.Contains(scanner.Text(), "TOOLS_VERSION") {
+						if strings.Contains(scanner.Text(), "RECIPE_NAME=\""+recipe.RecipeName+"\"") {
 							status = ui.OrangeBt(ui.B("outdated"))
-							if strings.Contains(scanner.Text(), "__TOOLS_VERSION__="+config.DockerToolsVersion) {
+							if strings.Contains(scanner.Text(), "TOOLS_VERSION=\""+config.DockerToolsVersion+"\"") {
 								status = ui.GreenBt(ui.B("installed"))
 							}
 						}
@@ -536,7 +534,7 @@ renderStatus
 func (recipe *Recipe) renderStatus() string {
 	var status string
 
-	hostprefix := strings.Replace(recipe.Prefix, "$HOME", config.Values.HostHome, -1)
+	hostprefix := strings.Replace(recipe.Prefix, "$HOME", config.HostHome, -1)
 	if _, err := os.Stat("/host" + hostprefix + "/" + recipe.ToolName); os.IsNotExist(err) {
 		status = ui.Grey(ui.B("not installed"))
 
@@ -561,18 +559,20 @@ func (recipe *Recipe) renderStatus() string {
 
 				for readerr == nil {
 					line, _, readerr = reader.ReadLine()
-					if strings.Contains(string(line), "__RECIPE_NAME__") {
+					if strings.Contains(string(line), "RECIPE_NAME") {
 						istool = true
 
 						// Get the recipe name
-						re := regexp.MustCompile("^__RECIPE_NAME__=(.*)$")
+						re := regexp.MustCompile("RECIPE_NAME=\"(.*)\"")
 						matches := re.FindStringSubmatch(string(line))
-						toolrecipe = matches[1]
-						if recipe.RecipeName == toolrecipe {
-							isrecipe = true
+						if 2 <= len(matches) {
+							toolrecipe = matches[1]
+							if recipe.RecipeName == toolrecipe {
+								isrecipe = true
+							}
 						}
 					}
-					if strings.Contains(string(line), "__DOCKER_TOOLS_VERSION__="+config.DockerToolsVersion) {
+					if strings.Contains(string(line), "DOCKER_TOOLS_VERSION=\""+config.DockerToolsVersion+"\"") {
 						isupdated = true
 					}
 				}

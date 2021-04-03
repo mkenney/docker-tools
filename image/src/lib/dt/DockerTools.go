@@ -62,8 +62,8 @@ func New() *DockerTools {
 
 	// Load all recipe files
 	dockerTools.Recipes = recipes.New()
-	dockerTools.Recipes = dockerTools.Recipes.Load(config.Values.ConfPath + "/registry.yml")
-	dockerTools.Recipes = dockerTools.Recipes.Load(config.Values.ConfPath + "/recipes.yml")
+	dockerTools.Recipes = dockerTools.Recipes.Load(config.DockerToolsRegistry)
+	dockerTools.Recipes = dockerTools.Recipes.Load(config.ConfPath + "/recipes.yml")
 
 	return dockerTools
 }
@@ -74,8 +74,6 @@ Run executes the docker-tools program
 func (dt *DockerTools) Run() {
 	var command cli.Command
 
-	//fmt.Printf("Commands: %v", dt.Commands)
-	//os.Exit(0)
 	if 0 < len(dt.Commands) {
 		switch {
 		//        case "config" == dt.Commands[0].Name:
@@ -137,47 +135,47 @@ Generate usage:
 */
 func (dt *DockerTools) GenerateScript() {
 	var recipe *recipes.Recipe
+	var recipeSource string
 
-	commands, opts, err := dt.Commands.Shift()
+	commands, recipeCommand, err := dt.Commands.Shift()
 	if nil != err {
 		glog.Fatalf("Cannot generate script. Not really sure how I got here: %s", err)
 	}
 
 	if 0 == len(commands) {
-		recipe = recipes.NewRecipe([]string{})
+		recipeSource = "registry"
 
 	} else {
 		if "recipes" != commands[0].Name && "registry" != commands[0].Name {
 			glog.Fatalf("Unknown recipe source '%s'", commands[0].Name)
 		}
-		if !dt.Recipes.HasRecipe(commands[1].Name, commands[0].Name) {
-			glog.Fatalf("Unknown recipe '%s'", commands[1].Name)
-		}
-		recipe = dt.Recipes.GetRecipe(commands[1].Name, commands[0].Name)
-
-		//recipe.SetCliVolumes(recipeData[6])
-		//recipe.SetCliEnv(recipeData[7])
+		recipeSource = commands[0].Name
 	}
 
-	if opts.HasOpt("name")       {recipe.ToolName = opts.Opts["name"][0]}
-	if opts.HasOpt("prefix")     {recipe.Prefix = opts.Opts["prefix"][0]}
-	if opts.HasOpt("template")   {recipe.Template = opts.Opts["template"][0]}
-	if opts.HasOpt("image")      {recipe.Image = opts.Opts["image"][0]}
-	if opts.HasOpt("tag")        {recipe.Tag = opts.Opts["tag"][0]}
-	if opts.HasOpt("volumes")    {
-		for _, vol := range opts.Opts["volumes"] {
+	recipe = recipes.NewRecipe()
+	if dt.Recipes.HasRecipe(recipeCommand.Name, recipeSource) {
+		recipe = dt.Recipes.GetRecipe(recipeCommand.Name, recipeSource)
+	}
+
+	if recipeCommand.HasOpt("name")       {recipe.ToolName = recipeCommand.Opts["name"][0]}
+	if recipeCommand.HasOpt("prefix")     {recipe.Prefix = recipeCommand.Opts["prefix"][0]}
+	if recipeCommand.HasOpt("template")   {recipe.Template = recipeCommand.Opts["template"][0]}
+	if recipeCommand.HasOpt("image")      {recipe.Image = recipeCommand.Opts["image"][0]}
+	if recipeCommand.HasOpt("tag")        {recipe.Tag = recipeCommand.Opts["tag"][0]}
+	if recipeCommand.HasOpt("volumes")    {
+		for _, vol := range recipeCommand.Opts["volumes"] {
 			recipe.AddVolume(vol)
 		}
 	}
-	if opts.HasOpt("env")        {
-		for _, env := range opts.Opts["env"] {
+	if recipeCommand.HasOpt("env")        {
+		for _, env := range recipeCommand.Opts["env"] {
 			recipe.AddEnv(env)
 		}
 	}
-	if opts.HasOpt("entrypoint") {recipe.Entrypoint = opts.Opts["entrypoint"][0]}
-	if opts.HasOpt("cmd")        {recipe.Cmd = opts.Opts["cmd"][0]}
-	if opts.HasOpt("options")    {
-		for _, opt := range opts.Opts["options"] {
+	if recipeCommand.HasOpt("entrypoint") {recipe.Entrypoint = recipeCommand.Opts["entrypoint"][0]}
+	if recipeCommand.HasOpt("cmd")        {recipe.Cmd = recipeCommand.Opts["cmd"][0]}
+	if recipeCommand.HasOpt("options")    {
+		for _, opt := range recipeCommand.Opts["options"] {
 			recipe.AddOption(opt)
 		}
 	}

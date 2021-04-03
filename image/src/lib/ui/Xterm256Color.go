@@ -363,7 +363,7 @@ func GetTemplateVars() (retval map[string]string) {
     retval["toolName"]                         = WhiteBt("docker-tools")
 
     // Common usage vars
-    retval["usageUSAGE"]                       = "USAGE"
+    retval["usageUSAGE"]                       = "usage"
     retval["usageToolName"]                    = "docker-tools"
     retval["usageCOMMAND"]                     = U("COMMAND")
     retval["usageRECIPE"]                      = U("RECIPE")

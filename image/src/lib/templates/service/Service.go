@@ -14,7 +14,7 @@ Template is a reference to this module's template instance
 var Template *template.Template
 
 func init() {
-	file, err := ioutil.ReadFile(config.DefaultTemplateDir + "/service/Service.tmpl")
+	file, err := ioutil.ReadFile(config.DockerToolsTemplateDir + "/service/Service.tmpl")
     if nil != err {
         glog.Fatalf("Could not read template file '%s'", err)
     }

@@ -1,45 +1,42 @@
 #!/usr/bin/env bash
 
-DOCKER_TOOLS_CONFIG_DIR=/Users/mkenney/my_projects/docker-tools/.docker-tools
+#
+# This file was created by the `docker-tools` script generator. Any
+# modifications made here may be overwritten without notice.
+#
+# See `docker-tools --help` for more information.
+#
+# This script wraps a `docker run` command to execute a docker container.
+#
+
 if [ "" == "$DOCKER_TOOLS_CONFIG_DIR" ]; then DOCKER_TOOLS_CONFIG_DIR=$HOME/.docker-tools; fi
 if [ "" == "$DOCKER_TOOLS_PREFIX_DIR" ]; then DOCKER_TOOLS_PREFIX_DIR=/usr/local/bin; fi
 
-# Build out the args as an array because there can easily be too many to manage without
-# parsing the elements back into args: http://stackoverflow.com/a/411999/867812
-declare -a argv
-declare argc=0
+declare DOCKER_TOOLS_VERSION="0.0.0"
+declare RECIPE_NAME="docker-tools"
+declare TOOL_NAME="docker-tools"
+declare PREFIX="$HOME/my_projects/docker-tools/bin"
+declare TEMPLATE="tool"
+declare IMAGE="mkenney/docker-tools"
+declare TAG="latest"
+declare VOLUME="-v \"$DOCKER_TOOLS_CONFIG_DIR:/usr/local/docker-tools:rw\" -v \"/oracle/product/latest/bin:/host/oracle/product/latest/bin\" -v \"/usr/local/opt/coreutils/libexec/gnubin:/host/usr/local/opt/coreutils/libexec/gnubin\" -v \"/Users/mkenney/bin:/host/Users/mkenney/bin\" -v \"/usr/local/bin:/host/usr/local/bin\" -v \"/oracle/product/latest/bin:/host/oracle/product/latest/bin\" -v \"/usr/local/opt/coreutils/libexec/gnubin:/host/usr/local/opt/coreutils/libexec/gnubin\" -v \"/Users/mkenney/bin:/host/Users/mkenney/bin\" -v \"/usr/local/bin:/host/usr/local/bin\" -v \"/usr/bin:/host/usr/bin\" -v \"/bin:/host/bin\" -v \"/usr/sbin:/host/usr/sbin\" -v \"/sbin:/host/sbin\" -v \"/usr/local/bin:/host/usr/local/bin\" -v \"/usr/local/go/bin:/host/usr/local/go/bin\" -v \"/oracle/product/latest/bin:/host/oracle/product/latest/bin\" -v \"/usr/local/opt/coreutils/libexec/gnubin:/host/usr/local/opt/coreutils/libexec/gnubin\" -v \"/Users/mkenney/bin:/host/Users/mkenney/bin\" -v \"/usr/java/latest/bin:/host/usr/java/latest/bin\" -v \"/Users/mkenney/my_projects/go:/host/Users/mkenney/my_projects/go\" -v \"/Users/mkenney/my_projects/docker-tools/image:/host/Users/mkenney/my_projects/docker-tools/image\" -v \"/Users/mkenney/my_projects/docker-tools/image/lib/bin:/host/Users/mkenney/my_projects/docker-tools/image/lib/bin\" -v \"/usr/local/hadoop/bin:/host/usr/local/hadoop/bin\" -v \"/usr/local/hbase/bin:/host/usr/local/hbase/bin\" -v \"/usr/local/hive/bin:/host/usr/local/hive/bin\" -v \"/usr/local/pig/bin:/host/usr/local/pig/bin\" -v \"/Users/mkenney/hdshell/bin:/host/Users/mkenney/hdshell/bin\" -v \"/opt/rh/php54/root/usr/bin:/host/opt/rh/php54/root/usr/bin\" -v \"/usr/local/apache-maven/bin:/host/usr/local/apache-maven/bin\" -v \"/usr/local/ant/bin:/host/usr/local/ant/bin\" -v \"/usr/local/apache/bin:/host/usr/local/apache/bin\" -v \"/Users/mkenney:/host/Users/mkenney\" -v \"/usr/java/latest/bin:/host/usr/java/latest/bin\" -v \"/Users/mkenney/my_projects/go:/host/Users/mkenney/my_projects/go\" -v \"/Users/mkenney/my_projects/docker-tools/image:/host/Users/mkenney/my_projects/docker-tools/image\" -v \"/Users/mkenney/my_projects/docker-tools/image/lib/bin:/host/Users/mkenney/my_projects/docker-tools/image/lib/bin\" -v \"/usr/local/hadoop/bin:/host/usr/local/hadoop/bin\" -v \"/usr/local/hbase/bin:/host/usr/local/hbase/bin\" -v \"/usr/local/hive/bin:/host/usr/local/hive/bin\" -v \"/usr/local/pig/bin:/host/usr/local/pig/bin\" -v \"/Users/mkenney/hdshell/bin:/host/Users/mkenney/hdshell/bin\" -v \"/opt/rh/php54/root/usr/bin:/host/opt/rh/php54/root/usr/bin\" -v \"/usr/local/apache-maven/bin:/host/usr/local/apache-maven/bin\" -v \"/usr/local/ant/bin:/host/usr/local/ant/bin\" -v \"/usr/local/apache/bin:/host/usr/local/apache/bin\" -v \"/Users/mkenney:/host/Users/mkenney\" -v \"/usr/java/latest/bin:/host/usr/java/latest/bin\" -v \"/Users/mkenney/my_projects/go:/host/Users/mkenney/my_projects/go\" -v \"/Users/mkenney/my_projects/docker-tools/image:/host/Users/mkenney/my_projects/docker-tools/image\" -v \"/Users/mkenney/my_projects/docker-tools/image/lib/bin:/host/Users/mkenney/my_projects/docker-tools/image/lib/bin\" -v \"/usr/local/hadoop/bin:/host/usr/local/hadoop/bin\" -v \"/usr/local/hbase/bin:/host/usr/local/hbase/bin\" -v \"/usr/local/hive/bin:/host/usr/local/hive/bin\" -v \"/usr/local/pig/bin:/host/usr/local/pig/bin\" -v \"/Users/mkenney/hdshell/bin:/host/Users/mkenney/hdshell/bin\" -v \"/opt/rh/php54/root/usr/bin:/host/opt/rh/php54/root/usr/bin\" -v \"/usr/local/apache-maven/bin:/host/usr/local/apache-maven/bin\" -v \"/usr/local/ant/bin:/host/usr/local/ant/bin\" -v \"/usr/local/apache/bin:/host/usr/local/apache/bin\" -v \"/Users/mkenney:/host/Users/mkenney\" -v \"/usr/local/protoc-3.1.0-osx-x86_64/bin:/host/usr/local/protoc-3.1.0-osx-x86_64/bin\" "
+declare ENV="-e \"TERM=$TERM\" -e \"HOME=$HOME\" -e \"HOST_PATH=$PATH\" -e \"DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR\" -e \"DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR\" "
+declare ENTRYPOINT=""
+declare CMD=""
+declare OPTION=""
+declare SOURCE="registry"
+declare NOTES="This recipe will generate the `docker-tools` container management script."
 
-# Split out the PATH so each can be mounted into the container
-declare old_IFS=IFS
-IFS=$':'
-declare -a paths=($PATH)
-IFS=$old_IFS
-
-
-if [ -t 0 ]; then
-    argv[$argc]="-t"; argc=$((argc + 1))
-fi
-
-argv[$argc]="--volume=/Users/mkenney/my_projects/docker-tools/.docker-tools:/usr/local/docker-tools:rw"; argc=$((argc + 1))
-for path in "${paths[@]}"; do
-    if [ -d $path ]; then
-        argv[$argc]="--volume=$path:/host$path:ro"; argc=$((argc + 1))
+function term {
+    local ret_val
+    if [ -t 0 ]; then
+        ret_val="-t"
     fi
-done
+    printf -- "$ret_val"
+}
 
-argv[$argc]="--env=\"TERM=$TERM\""; argc=$((argc + 1))
-argv[$argc]="--env=\"HOME=$HOME\""; argc=$((argc + 1))
-argv[$argc]="--env=\"DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR\""; argc=$((argc + 1))
-argv[$argc]="--env=\"DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR\""; argc=$((argc + 1))
-#argv[$argc]="--entrypoint=sh"; argc=$((argc + 1))
-
-
-declare __image__="mkenney/docker-tools"
-declare __tag__="latest"
-
-#declare __env__="--env=\"TERM=$TERM\" --env=\"HOST_HOME=$HOME\" --env=\"DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR\" --env=\"DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR\" "
-#declare __env__="-e TERM=$TERM -e HOST_PATH=$PATH -e HOST_HOME=$HOME -e DOCKER_TOOLS_CONFIG_DIR=$DOCKER_TOOLS_CONFIG_DIR -e DOCKER_TOOLS_PREFIX_DIR=$DOCKER_TOOLS_PREFIX_DIR "
-
-
-#echo "docker run --rm ${__term__} -i "${argv[@]}" ${__image__}:${__tag__} ${__command__} $@"
-docker run --rm ${__term__} -i "${argv[@]}" ${__image__}:${__tag__} ${__command__} $@
+if [ "self-update" = "$1" ]; then
+    eval docker pull $IMAGE:$TAG
+else
+    eval docker run --rm -i $(term) $OPTION $ENV $VOLUME $ENTRYPOINT $IMAGE:$TAG $CMD $@
+fi

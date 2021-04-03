@@ -53,7 +53,7 @@ func compileUsageTemplate(buffer *bytes.Buffer, templateName string, templateDat
 getTemplate will return the requested template file as a parsed Template pointer
 */
 func getTemplate(tmplName string) (retval *template.Template) {
-    file, err := ioutil.ReadFile(config.DefaultTemplateDir+"/docs/"+tmplName+".tmpl")
+    file, err := ioutil.ReadFile(config.DockerToolsTemplateDir+"/docs/"+tmplName+".tmpl")
 	if nil != err {
 		glog.Fatalf("Could not read template file '%s': %s", tmplName, err)
 	}

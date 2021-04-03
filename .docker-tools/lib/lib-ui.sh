@@ -149,13 +149,13 @@ function _s {
                 # incorrect order somewhere
                 lt|bt|dk)
                     >&2 echo "Unused color suffix '$style'"
-                    exit 2
+                    #exit 2
                 ;;
 
                 # invalid
                 *)
                     >&2 echo "Invalid style '$style'"
-                    exit 3
+                    #exit 3
                 ;;
             esac
             ret_val="${ret_val}$(eval "printf \"\$${prefix}${style}${suffix}\"")"
@@ -216,8 +216,10 @@ function _s {
 
     $(_s red)R$(_s orange)o$(_s yellow)y $(_s green)G. $(_s blue)B$(_s indigo)i$(_s violet)v$(_s r)
 "
-        exit
+        #exit
     fi
 
     printf "$ret_val"
 }
+
+export -f _s
